@@ -1,0 +1,269 @@
+//! Rebalancer state persistence through an internal compacted topic on the
+//! managed Crabka cluster. It replaces the file-backed
+//! `{data_dir}/in_flight.json` store. The state survives a pod restart, which
+//! is a prerequisite for multi-replica HA.
+
+mod error;
+pub mod loader;
+pub(crate) mod producer;
+pub(crate) mod serde_format;
+pub mod topic_admin;
+
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
+
+use arc_swap::ArcSwap;
+use bytes::Bytes;
+use crabka_client_core::Client;
+pub use error::StateTopicError;
+pub use loader::StateTopicLoader;
+
+use crate::{config::RebalancerRuntimePolicy, executor::state::InFlightFile};
+
+/// In-memory mirror of the latest record under the `STATE_KEY` on the state
+/// topic. `StateTopicLoader` fills it at startup, and `StateTopic::write` and
+/// `StateTopic::delete` fill it after that.
+#[derive(Debug, Default)]
+pub struct LoadedState {
+    pub value: ArcSwap<Option<InFlightFile>>,
+    pub is_loaded: AtomicBool,
+}
+
+impl LoadedState {
+    #[must_use]
+    pub fn new() -> Arc<Self> {
+        Arc::new(Self {
+            value: ArcSwap::from_pointee(None),
+            is_loaded: AtomicBool::new(false),
+        })
+    }
+
+    pub fn current(&self) -> Option<InFlightFile> {
+        let guard = self.value.load();
+        let opt: &Option<InFlightFile> = &guard;
+        opt.clone()
+    }
+
+    pub fn is_loaded(&self) -> bool {
+        self.is_loaded.load(Ordering::Acquire)
+    }
+
+    pub(crate) fn store(&self, value: Option<InFlightFile>) {
+        self.value.store(Arc::new(value));
+    }
+
+    pub(crate) fn mark_loaded(&self) {
+        self.is_loaded.store(true, Ordering::Release);
+    }
+}
+
+/// The fixed key under which the executor publishes its state. The topic holds
+/// a single in-flight record, and a tombstone with a null value clears it.
+pub const STATE_KEY: &str = "in_flight";
+
+/// Backend abstraction for the executor's persisted state.
+///
+/// The production impl is `StateTopic`. Tests use the in-memory fake
+/// `fake::InMemoryBackend` to drive the executor's state machine without a
+/// broker.
+#[async_trait::async_trait]
+pub trait StateBackend: Send + Sync {
+    /// Snapshot the latest known in-flight record. Returns `None` if the
+    /// topic is empty or tombstoned, or if the load has not completed yet.
+    /// The caller must check `is_loaded` first.
+    fn loaded(&self) -> Option<InFlightFile>;
+
+    /// `true` once the loader has finished its initial replay.
+    fn is_loaded(&self) -> bool;
+
+    /// Persist an in-flight record. In production this produces to the topic
+    /// AND mirrors the record locally into `LoadedState`, so the executor's
+    /// next `loaded()` call sees the write without a round trip through the
+    /// loader.
+    async fn write(&self, f: &InFlightFile) -> Result<(), StateTopicError>;
+
+    /// Tombstone the state key.
+    async fn delete(&self) -> Result<(), StateTopicError>;
+}
+
+/// Topic-backed `StateBackend` impl. It produces to the state topic and reads
+/// from the shared `LoadedState` mirror.
+#[derive(Clone)]
+pub struct StateTopic {
+    client: Arc<Client>,
+    topic: String,
+    state: Arc<LoadedState>,
+    runtime_policy: RebalancerRuntimePolicy,
+}
+
+impl StateTopic {
+    #[must_use]
+    pub fn new(client: Arc<Client>, topic: String, state: Arc<LoadedState>) -> Self {
+        Self::new_with_policy(client, topic, state, RebalancerRuntimePolicy::default())
+    }
+
+    #[must_use]
+    pub fn new_with_policy(
+        client: Arc<Client>,
+        topic: String,
+        state: Arc<LoadedState>,
+        runtime_policy: RebalancerRuntimePolicy,
+    ) -> Self {
+        Self {
+            client,
+            topic,
+            state,
+            runtime_policy,
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl StateBackend for StateTopic {
+    fn loaded(&self) -> Option<InFlightFile> {
+        self.state.current()
+    }
+
+    fn is_loaded(&self) -> bool {
+        self.state.is_loaded()
+    }
+
+    async fn write(&self, f: &InFlightFile) -> Result<(), StateTopicError> {
+        let value: Bytes = serde_format::encode(f)?;
+        producer::produce_state(
+            &self.client,
+            &self.topic,
+            STATE_KEY,
+            Some(value),
+            &self.runtime_policy,
+        )
+        .await?;
+        self.state.store(Some(f.clone()));
+        Ok(())
+    }
+
+    async fn delete(&self) -> Result<(), StateTopicError> {
+        producer::produce_state(
+            &self.client,
+            &self.topic,
+            STATE_KEY,
+            None,
+            &self.runtime_policy,
+        )
+        .await?;
+        self.state.store(None);
+        Ok(())
+    }
+}
+
+pub mod fake {
+    //! In-memory `StateBackend` for executor unit tests and integration
+    //! tests. It does not touch a broker.
+
+    use std::sync::{
+        Mutex,
+        atomic::{AtomicBool, Ordering},
+    };
+
+    use async_trait::async_trait;
+
+    use crate::{
+        executor::state::InFlightFile,
+        state_topic::{StateBackend, StateTopicError},
+    };
+
+    #[derive(Default)]
+    pub struct InMemoryBackend {
+        pub state: Mutex<Option<InFlightFile>>,
+        pub loaded_flag: AtomicBool,
+    }
+
+    impl InMemoryBackend {
+        /// Construct in a "fully loaded, empty" state, where `is_loaded()`
+        /// returns `true` and `loaded()` returns `None`. This is the most
+        /// common fixture for executor tests that do not cover the
+        /// resume-from-state path.
+        #[must_use]
+        pub fn new_loaded() -> Self {
+            Self {
+                state: Mutex::new(None),
+                loaded_flag: AtomicBool::new(true),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl StateBackend for InMemoryBackend {
+        fn loaded(&self) -> Option<InFlightFile> {
+            self.state.lock().unwrap().clone()
+        }
+        fn is_loaded(&self) -> bool {
+            self.loaded_flag.load(Ordering::Acquire)
+        }
+        async fn write(&self, f: &InFlightFile) -> Result<(), StateTopicError> {
+            *self.state.lock().unwrap() = Some(f.clone());
+            Ok(())
+        }
+        async fn delete(&self) -> Result<(), StateTopicError> {
+            *self.state.lock().unwrap() = None;
+            Ok(())
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crabka_units::bytes_per_sec;
+
+    use super::*;
+    use crate::{
+        executor::state::{InFlightFile, Phase},
+        model::proposal::ProposalStatus,
+    };
+
+    fn in_flight(id: &str, phase: Phase) -> InFlightFile {
+        InFlightFile::new(id.to_string(), phase, 42, bytes_per_sec(50_000_000))
+    }
+
+    #[test]
+    fn loaded_state_tracks_current_value_and_loaded_flag() {
+        let state = LoadedState::new();
+        assert2::assert!(!state.is_loaded());
+        assert2::assert!(state.current().is_none());
+
+        let mut file = in_flight("p1", Phase::Submit);
+        file.target_terminal_status = Some(ProposalStatus::Cancelled);
+        state.store(Some(file.clone()));
+        assert2::assert!(state.current().as_ref().is_some_and(|f| {
+            f.proposal_id == "p1" && f.target_terminal_status == Some(ProposalStatus::Cancelled)
+        }));
+
+        state.mark_loaded();
+        assert2::assert!(state.is_loaded());
+        state.store(None);
+        assert2::assert!(state.current().is_none());
+        assert2::assert!(state.is_loaded());
+    }
+
+    #[tokio::test]
+    async fn in_memory_backend_mirrors_writes_and_tombstones() {
+        let backend = fake::InMemoryBackend::new_loaded();
+        assert2::assert!(backend.is_loaded());
+        assert2::assert!(backend.loaded().is_none());
+
+        let file = in_flight("p2", Phase::Wait);
+        backend.write(&file).await.unwrap();
+        assert2::assert!(
+            backend
+                .loaded()
+                .as_ref()
+                .is_some_and(|f| { f.proposal_id == "p2" && f.phase == Phase::Wait })
+        );
+
+        backend.delete().await.unwrap();
+        assert2::assert!(backend.loaded().is_none());
+        assert2::assert!(backend.is_loaded());
+    }
+}

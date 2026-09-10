@@ -1,0 +1,9 @@
+build --incompatible_strict_action_env
+build --linkopt=-Wno-unused-command-line-argument
+build --host_linkopt=-Wno-unused-command-line-argument
+common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+common --repo_env=BAZEL_NO_APPLE_CPP_TOOLCHAIN=1
+test --test_output=errors
+build:lint --aspects=//tools/lint:linters.bzl%clippy
+build:lint --output_groups=rules_lint_report
+test --@aspect_rules_lint//lint:fail_on_violation

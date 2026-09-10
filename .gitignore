@@ -1,0 +1,31 @@
+target/
+**/*.rs.bk
+
+# `/.cargo/config.toml` is TRACKED. It holds the git-fetch setting that CI would
+# otherwise repeat per workflow. An ignored config file never reaches the
+# runners, so the setting stops working with nothing to show for it.
+
+# Bazel convenience symlinks + local user settings. MODULE.bazel.lock is
+# TRACKED, so CI resolves the same module graph a developer did.
+/bazel-*
+user.bazelrc
+
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Cargo mutant output
+mutants.out
+mutants.out.old
+
+# Python bytecode from local runs of scripts
+__pycache__/
+
+# why3find's prover-result cache, written beside the proof sessions under
+# `verif/` when `cargo creusot` runs. It is a local speed-up keyed by prover
+# and goal, not a proof artifact, so it does not belong in the repository.
+/.why3find/
+
+# Local Criterion benchmark output directory
+/bench-results/

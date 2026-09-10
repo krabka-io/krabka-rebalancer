@@ -1,0 +1,64 @@
+[package]
+name = "crabka-rebalancer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Cruise-Control-equivalent partition rebalancer for Crabka clusters"
+repository = "https://github.com/krabka-io/krabka-rebalancer"
+homepage = "https://github.com/krabka-io/krabka-rebalancer"
+documentation = "https://docs.rs/crabka-rebalancer"
+readme = "README.md"
+keywords = ["kafka", "rebalancer", "partitions", "crabka"]
+categories = ["algorithms", "database-implementations"]
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "crabka-rebalancer"
+path = "src/bin/rebalancer.rs"
+
+[dependencies]
+assert2 = { workspace = true }
+crabka-client-core = "0.4.0"
+crabka-client-admin = "0.4.0"
+bytes.workspace = true
+num-traits.workspace = true
+crabka-protocol = { version = "0.4.0", default-features = false }
+crabka-metadata = "0.4.0"
+crabka-units = { workspace = true }
+connectrpc-axum.workspace = true
+prost.workspace = true
+pbjson.workspace = true
+axum.workspace = true
+arc-swap.workspace = true
+prometheus-client.workspace = true
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "net", "macros", "signal", "time", "sync", "process"] }
+tokio-util = { workspace = true, features = ["rt"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
+clap = { workspace = true, features = ["env", "derive"] }
+uuid = { workspace = true }
+anyhow.workspace = true
+thiserror.workspace = true
+strum.workspace = true
+subtle.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+serde_yaml.workspace = true
+async-trait.workspace = true
+parking_lot.workspace = true
+reqwest = { version = "0.13", default-features = false, features = ["json"] }
+refined_type = { workspace = true }
+
+[build-dependencies]
+connectrpc-axum-build = { workspace = true }
+protoc-bin-vendored = { workspace = true }
+
+[dev-dependencies]
+mutants = { workspace = true }
+tempfile.workspace = true
+temp-env = "0.3"
+tower.workspace = true

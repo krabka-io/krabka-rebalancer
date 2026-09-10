@@ -1,0 +1,30 @@
+Evaluate target_has_atomic for the four aarch64/x86_64 triples configured by
+this repository. Without this, unknown keys are false and
+not(target_has_atomic = "64") incorrectly includes portable-atomic.
+
+diff --git a/rs/private/cfg_parser.bzl b/rs/private/cfg_parser.bzl
+--- a/rs/private/cfg_parser.bzl
++++ b/rs/private/cfg_parser.bzl
+@@ -259,6 +259,9 @@ def _eval_eq(ctx, key, value, features):
+         return value in features
+     if key == "target_feature":
+         return _target_has_feature(ctx, value)
++    if key == "target_has_atomic":
++        return ctx["target_arch"] in ["aarch64", "x86_64"] and \
++               value in ["8", "16", "32", "64", "ptr"]
+     known = [
+         "target_os","target_family","target_arch","target_env",
+         "target_vendor","target_endian","target_pointer_width","target_abi",
+diff --git a/rs/private/cfg_parser_test.bzl b/rs/private/cfg_parser_test.bzl
+--- a/rs/private/cfg_parser_test.bzl
++++ b/rs/private/cfg_parser_test.bzl
+@@ -73,6 +73,9 @@ def _cfg_parser_smoke_test_impl(ctx):
+     asserts.false(env, cfg_matches(_cfg('feature = "serde"'), mac))
+     asserts.true(env, cfg_matches(_cfg('target_feature = "sse2"'), linux_gnu))
+     asserts.false(env, cfg_matches(_cfg('target_feature = "sse2"'), mac))
++    asserts.true(env, cfg_matches(_cfg('target_has_atomic = "64"'), linux_gnu))
++    asserts.true(env, cfg_matches(_cfg('target_has_atomic = "ptr"'), mac))
++    asserts.false(env, cfg_matches(_cfg('target_has_atomic = "64"'), wasm))
+ 
+     triples = [mac, linux_gnu, linux_musl, win, win_gnu, win_gnullvm, wasm, riscv32imac, riscv64gc]
+ 

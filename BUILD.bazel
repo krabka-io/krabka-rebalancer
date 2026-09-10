@@ -1,0 +1,17 @@
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "Cargo.lock",
+    "Cargo.toml",
+    "clippy.toml",
+])
+
+alias(
+    name = "rebalancer",
+    actual = "//crates/rebalancer",
+)
+
+alias(
+    name = "rebalancer_bin",
+    actual = "//crates/rebalancer:crabka-rebalancer",
+)

@@ -1,0 +1,86 @@
+[graph]
+all-features = true
+no-default-features = false
+
+[output]
+feature-depth = 1
+
+[advisories]
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+yanked = "deny"
+ignore = [
+    # RSA "Marvin" timing side-channel. Pulled in transitively by `picky`
+    # (a hard dependency of the vendored `sspi` Kerberos stack). Our GSSAPI
+    # path is auth-only over AES keytab keys and performs no RSA private-key
+    # operations (no PKINIT), so the network-observable timing leak does not
+    # apply. The advisory has no fixed release available.
+    "RUSTSEC-2023-0071",
+    # paste is unmaintained. It enters through refined_type and through
+    # pprof_util on the optional jemalloc profiling path; neither upstream has
+    # removed it yet and no fixed paste release exists.
+    "RUSTSEC-2024-0436",
+]
+
+[licenses]
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "MIT",
+    "MIT-0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "CC0-1.0",
+    # webpki-roots ships the Mozilla NSS CA bundle (data, not code) under
+    # CDLA-Permissive-2.0. Pulled in transitively via reqwest + rustls.
+    "CDLA-Permissive-2.0",
+]
+exceptions = [
+    # portpicker is public-domain-equivalent (The Unlicense, OSI-approved and
+    # FSF Free/Libre). Pulled in transitively via the vendored `sspi` crate's
+    # `network_client` feature, which we need for KDC communication.
+    { allow = ["Unlicense"], crate = "portpicker" },
+    # Creusot's specification attributes/proc macros are LGPL-2.1-or-later.
+    # They enter the graph only through the newly added verified kernels
+    # (`krabka-verified`) and throttle arithmetic contracts; ordinary cargo
+    # builds use Creusot's dummy macro implementation, so keep this allowance
+    # crate-scoped rather than allowing LGPL globally.
+    { allow = ["LGPL-2.1-or-later"], crate = "creusot-std" },
+    { allow = ["LGPL-2.1-or-later"], crate = "creusot-std-proc" },
+]
+confidence-threshold = 0.93
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+allow-wildcard-paths = true
+highlight = "all"
+deny = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = [
+    # First-party crates are revision-pinned in Cargo.toml until they are
+    # published from their sibling repositories.
+    "https://github.com/krabka-io/krabka-client-rs",
+    "https://github.com/krabka-io/krabka-protocol",
+    "https://github.com/krabka-io/krabka-schema-registry",
+    # krabka-security pins unreleased GSSAPI fixes from this fork.
+    "https://github.com/robot-head/sspi-rs",
+    # Temporary compatibility pin until testcontainers-modules publishes a
+    # release that depends on testcontainers 0.28.
+    "https://github.com/testcontainers/testcontainers-rs-modules-community",
+]
+
+[[licenses.clarify]]
+name = "cfg_block"
+version = "0.1.1"
+expression = "Apache-2.0"
+license-files = [
+    { path = "LICENSE", hash = 0x0fb72a18 }
+]

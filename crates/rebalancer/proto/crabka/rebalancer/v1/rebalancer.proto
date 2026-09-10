@@ -1,0 +1,180 @@
+syntax = "proto3";
+package crabka.rebalancer.v1;
+
+service Rebalancer {
+  rpc GetState(GetStateRequest) returns (GetStateResponse);
+  rpc CreateProposal(CreateProposalRequest) returns (Proposal);
+  rpc DryRunProposal(DryRunProposalRequest) returns (DryRunResponse);
+  rpc GetProposal(GetProposalRequest) returns (Proposal);
+  rpc ListProposals(ListProposalsRequest) returns (ListProposalsResponse);
+  rpc ExecuteProposal(ExecuteProposalRequest) returns (ExecuteProposalResponse);
+  rpc CancelExecution(CancelExecutionRequest) returns (CancelExecutionResponse);
+  rpc GetAnomalies(GetAnomaliesRequest) returns (GetAnomaliesResponse);
+}
+
+message Broker {
+  int32 id = 1;
+  string host = 2;
+  int32 port = 3;
+  optional string rack = 4;
+}
+
+message Partition {
+  int32 partition = 1;
+  repeated int32 replicas = 2;
+  int32 leader = 3;
+  repeated int32 isr = 4;
+}
+
+message Topic { string name = 1; repeated Partition partitions = 2; }
+
+message InFlightReassignment {
+  string topic = 1;
+  int32 partition = 2;
+  repeated int32 adding_replicas = 3;
+  repeated int32 removing_replicas = 4;
+}
+
+message GetStateRequest {}
+message GetStateResponse {
+  int64 snapshot_at_ms = 1;
+  repeated Broker brokers = 2;
+  repeated Topic topics = 3;
+  repeated InFlightReassignment in_flight_reassignments = 4;
+}
+
+enum ProposalStatus {
+  PROPOSAL_STATUS_UNSPECIFIED = 0;
+  PROPOSAL_STATUS_COMPUTED = 1;
+  PROPOSAL_STATUS_EXECUTING = 2;
+  PROPOSAL_STATUS_COMPLETED = 3;
+  PROPOSAL_STATUS_FAILED = 4;
+  PROPOSAL_STATUS_CANCELLED = 5;
+}
+
+message Movement {
+  string topic = 1;
+  int32 partition = 2;
+  repeated int32 old_replicas = 3;
+  repeated int32 new_replicas = 4;
+  int32 old_leader = 5;
+  // -1 means Kafka will elect the replacement and this proposal does not
+  // claim or enforce a particular leader.
+  int32 new_leader = 6;
+}
+
+message ProposalSummary {
+  int32 replica_movements = 1;
+  int32 leader_movements = 2;
+  int32 max_replicas_before = 3;
+  int32 max_replicas_after = 4;
+  int32 max_leaders_before = 5;
+  int32 max_leaders_after = 6;
+}
+
+message Proposal {
+  string id = 1;
+  ProposalStatus status = 2;
+  int64 created_at_ms = 3;
+  repeated string goals_applied = 4;
+  ProposalSummary summary = 5;
+  repeated Movement movements = 6;
+  int64 started_at_ms = 7;
+  int64 terminated_at_ms = 8;
+  optional string failure_reason = 9;
+  int64 throttle_bytes_per_sec = 10;
+}
+
+enum ProposalMode {
+  PROPOSAL_MODE_UNSPECIFIED = 0;
+  // Optimize the complete current broker set with the selected goals.
+  PROPOSAL_MODE_FULL = 1;
+  // Evacuate every listed broker; goals must be empty.
+  PROPOSAL_MODE_REMOVE_BROKERS = 2;
+  // Run selected goals while admitting only current replica hosts and the
+  // listed brokers as placement destinations.
+  PROPOSAL_MODE_ADD_BROKERS = 3;
+}
+
+message CreateProposalRequest {
+  repeated string goals = 1;
+  // Unspecified preserves the legacy full-cluster operation.
+  ProposalMode mode = 2;
+  // Required and non-empty for add/remove modes; empty for full mode.
+  repeated int32 brokers = 3;
+}
+message DryRunProposalRequest { string id = 1; }
+message DryRunResponse {
+  string id = 1;
+  ProposalSummary summary = 2;
+  int64 estimated_bytes_moved = 3;
+}
+message GetProposalRequest { string id = 1; }
+message ListProposalsRequest { int32 limit = 1; }
+message ListProposalsResponse { repeated Proposal proposals = 1; }
+
+message ExecuteProposalRequest {
+  string id = 1;
+  optional int64 throttle_bytes_per_sec = 2;
+}
+message ExecuteProposalResponse { Proposal proposal = 1; }
+
+message CancelExecutionRequest { string id = 1; }
+message CancelExecutionResponse { Proposal proposal = 1; }
+
+// ─── Anomaly detector ─────────────────────────────────────────────────
+
+enum AnomalyKind {
+  ANOMALY_KIND_UNSPECIFIED = 0;
+  ANOMALY_KIND_BROKER_DEATH = 1;
+  ANOMALY_KIND_UNDER_REPLICATED_PARTITIONS = 2;
+  ANOMALY_KIND_DISK_PRESSURE = 3;
+  ANOMALY_KIND_SLOW_BROKER = 4;
+}
+
+enum AnomalySeverity {
+  ANOMALY_SEVERITY_UNSPECIFIED = 0;
+  ANOMALY_SEVERITY_WARNING = 1;
+  ANOMALY_SEVERITY_CRITICAL = 2;
+}
+
+message PartitionKey {
+  string topic = 1;
+  int32 partition = 2;
+}
+
+message BrokerPartitionKey {
+  int32 broker = 1;
+  string topic = 2;
+  int32 partition = 3;
+}
+
+message AnomalyKey {
+  oneof inner {
+    int32 broker = 1;
+    PartitionKey partition = 2;
+    BrokerPartitionKey broker_partition = 3;
+  }
+}
+
+message Anomaly {
+  string id = 1;
+  AnomalyKind kind = 2;
+  AnomalyKey key = 3;
+  AnomalySeverity severity = 4;
+  int64 detected_at_ms = 5;
+  int64 last_seen_at_ms = 6;
+  int64 resolved_at_ms = 7;
+  optional string triggered_proposal_id = 8;
+  int64 mute_until_ms = 9;
+  string details = 10;
+}
+
+message GetAnomaliesRequest {
+  int32 limit = 1;
+  optional bool include_resolved = 2;
+}
+
+message GetAnomaliesResponse {
+  repeated Anomaly anomalies = 1;
+}

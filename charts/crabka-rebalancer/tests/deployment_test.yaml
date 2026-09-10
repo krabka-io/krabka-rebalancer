@@ -1,0 +1,202 @@
+suite: deployment
+templates:
+  - deployment.yaml
+release:
+  name: demo
+  namespace: kafka
+set:
+  bootstrapServers: kafka-bootstrap:9092
+tests:
+  - it: renders one replica with Recreate strategy
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: container exposes Connect-RPC port 9300
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 9300
+
+  - it: probes wired to /healthz and /readyz
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /healthz
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /readyz
+
+  - it: passes bootstrapServers env var
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_BOOTSTRAP_SERVERS
+            value: kafka-bootstrap:9092
+
+  - it: reads broker evacuation credential from an existing Secret
+    set:
+      brokerEvacuationAuth.existingSecret: operator-rebalancer-auth
+      brokerEvacuationAuth.key: bearer-token
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_REBALANCER_BROKER_EVACUATION_TOKEN_FILE
+            value: /var/run/secrets/crabka-rebalancer/broker-evacuation-token
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: broker-evacuation-auth
+            mountPath: /var/run/secrets/crabka-rebalancer
+            readOnly: true
+      - equal:
+          path: spec.template.spec.volumes[1].secret.secretName
+          value: operator-rebalancer-auth
+      - equal:
+          path: spec.template.spec.volumes[1].secret.items[0]
+          value:
+            key: bearer-token
+            path: broker-evacuation-token
+
+  - it: mounts persistent volume at expected path
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /var/lib/crabka-rebalancer
+      - equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: demo-crabka-rebalancer
+
+  - it: passes minTopicLeadersPerBroker env var
+    set:
+      minTopicLeadersPerBroker: 2
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_MIN_TOPIC_LEADERS_PER_BROKER
+            value: "2"
+
+  - it: passes reassignment request timeout as a human duration
+    set:
+      reassignmentRequestTimeout: 37ms
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT
+            value: 37ms
+
+  - it: passes dimensioned runtime policy overrides
+    set:
+      runtime.executorDrainTimeout: 37ms
+      runtime.detectorHistoryCapacity: 7
+      runtime.stateFetchMax: 32KiB
+      runtime.stateTopicMinCleanableDirtyRatio: 2%
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_REBALANCER_EXECUTOR_DRAIN_TIMEOUT
+            value: 37ms
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_REBALANCER_DETECTOR_HISTORY_CAPACITY
+            value: "7"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_REBALANCER_STATE_FETCH_MAX
+            value: 32KiB
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_REBALANCER_STATE_TOPIC_MIN_CLEANABLE_DIRTY_RATIO
+            value: 2%
+
+  - it: passes brokerCapacityFile env when brokerCapacities is set
+    set:
+      brokerCapacities:
+        1:
+          max_replicas: 4096
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_BROKER_CAPACITY_FILE
+            value: /etc/crabka-rebalancer/capacity.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: capacity-config
+            mountPath: /etc/crabka-rebalancer
+            readOnly: true
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: capacity-config
+            configMap:
+              name: demo-crabka-rebalancer-capacity
+
+  - it: passes metrics scrape env vars when metricsScrapeTargets is set
+    set:
+      metricsScrapeTargets: "1:broker1:9100,2:broker2:9100"
+      metricsScrapeIntervalSecs: 15
+      metricsRetentionSecs: 3600
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_METRICS_SCRAPE_TARGETS
+            value: "1:broker1:9100,2:broker2:9100"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_METRICS_SCRAPE_INTERVAL_SECS
+            value: "15"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_METRICS_RETENTION_SECS
+            value: "3600"
+
+  - it: passes detector env vars with safe defaults
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_DETECTOR_TICK_INTERVAL_SECS
+            value: "30"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_DETECTOR_AUTO_TRIGGER_ENABLED
+            value: "false"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_ANOMALY_RING_BUFFER_SIZE
+            value: "200"
+
+  - it: detector auto-trigger env flips when enabled
+    set:
+      detector.autoTriggerEnabled: true
+      detector.muteWindowSecs: 600
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_DETECTOR_AUTO_TRIGGER_ENABLED
+            value: "true"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_DETECTOR_MUTE_WINDOW_SECS
+            value: "600"

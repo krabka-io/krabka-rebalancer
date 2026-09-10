@@ -1,0 +1,120 @@
+# Default values for crabka-rebalancer.
+
+image:
+  repository: ghcr.io/krabka-io/krabka-rebalancer
+  tag: "" # defaults to .Chart.AppVersion when empty
+  pullPolicy: IfNotPresent
+
+# REQUIRED: comma-separated host:port list of Crabka bootstrap brokers.
+bootstrapServers: ""
+
+listenAddr: "0.0.0.0:9300"
+# Existing Secret containing the bearer token that authorizes destructive
+# remove-brokers proposal creation and execution. Empty disables that mode.
+brokerEvacuationAuth:
+  existingSecret: ""
+  key: token
+scrapeIntervalSecs: 10
+imbalanceThresholdPct: 10
+minTopicLeadersPerBroker: 0
+
+# Per-broker capacity table for the five capacity goals (slice 43d).
+# Empty map = no capacity limits → all five capacity goals are no-ops.
+brokerCapacities: {}
+#   Example:
+#   brokerCapacities:
+#     1:
+#       max_replicas: 4096
+#       disk_bytes: 1099511627776
+#       network_in_bytes_per_sec: 125000000
+#       network_out_bytes_per_sec: 125000000
+#       cpu_cores: 8.0
+
+# Override path for the capacity file. When non-empty, takes
+# precedence over `brokerCapacities` — the chart sets
+# CRABKA_BROKER_CAPACITY_FILE to this path and does NOT render the
+# ConfigMap (operator is responsible for providing the file).
+brokerCapacityFile: ""
+
+# Per-broker /metrics scrape targets. Format:
+# "id:host:port,id:host:port,…". Empty = scraper disabled (usage-driven
+# goals are no-ops).
+metricsScrapeTargets: ""
+metricsScrapeIntervalSecs: 30
+# Retention for the rolling-window store. Default 12h matches the
+# longest window the goals query.
+metricsRetentionSecs: 43200
+
+# Anomaly detector (slice 43g).
+# Set detector.tickIntervalSecs: 0 to disable the detector entirely.
+# autoTriggerEnabled toggles self-healing proposal auto-trigger; default
+# false — operators must opt in.
+detector:
+  tickIntervalSecs: 30
+  brokerDeathThresholdSecs: 60
+  underReplicatedThresholdSecs: 120
+  diskPressurePct: 0.85
+  diskCriticalPct: 0.95
+  slowBrokerMultiplier: 2.0
+  slowBrokerMinCores: 0.5
+  muteWindowSecs: 900
+  autoTriggerEnabled: false
+
+# Ring buffer capacity for {data_dir}/anomalies.json.
+anomalyRingBufferSize: 200
+
+maxMovementsPerProposal: 256
+proposalRingBufferSize: 20
+
+throttle:
+  defaultBytesPerSec: 50000000
+
+executeDeadlineSecs: 1800
+reassignmentPollIntervalSecs: 5
+reassignmentBatchSize: 200
+reassignmentRequestTimeout: 60s
+
+runtime:
+  recoveryLoadPollInterval: 100ms
+  executorDrainTimeout: 10s
+  ingesterJoinTimeout: 5s
+  scraperHttpTimeout: 5s
+  cancelDrainTimeout: 5s
+  cancelDrainPollInterval: 25ms
+  detectorHistoryCapacity: 10
+  stateTopicCreateTimeout: 10s
+  stateLoaderPollInterval: 100ms
+  stateLoaderQuietPolls: 5
+  stateFetchMax: 1MiB
+  stateProduceRetryAttempts: 50
+  stateProduceRetryBackoff: 200ms
+  stateProduceTimeout: 10s
+  stateTopicMinCleanableDirtyRatio: "1%"
+  stateTopicSegmentInterval: 1m
+
+persistence:
+  size: 1Gi
+  storageClass: "" # uses default storage class when empty
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+service:
+  type: ClusterIP
+  port: 9300

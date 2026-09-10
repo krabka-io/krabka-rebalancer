@@ -1,0 +1,55 @@
+[workspace]
+resolver = "2"
+members = ["crates/rebalancer"]
+
+[workspace.package]
+version = "0.4.0"
+edition = "2024"
+license = "Apache-2.0"
+authors = ["The Krabka Authors"]
+rust-version = "1.98.1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+clone_on_copy = "warn"
+result_large_err = "allow"
+
+[profile.mutants]
+inherits = "test"
+debug = "none"
+
+[workspace.dependencies]
+anyhow = "1"
+arc-swap = "1"
+assert2 = "0.4"
+async-trait = "0.1"
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio"] }
+bytes = "1"
+clap = { version = "4", features = ["derive"] }
+connectrpc-axum = "0.2"
+connectrpc-axum-build = "0.2"
+crabka-units = "0.4.0"
+mutants = "0.0.4"
+num-traits = "0.2.19"
+parking_lot = "0.12"
+pbjson = "0.9"
+prometheus-client = "0.25"
+prost = "0.14"
+protoc-bin-vendored = "3.2"
+refined_type = "0.6"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+strum = { version = "0.28", features = ["derive"] }
+subtle = "2"
+tempfile = "3"
+thiserror = "2"
+tokio = { version = "1", default-features = false }
+tokio-util = { version = "0.7", default-features = false }
+tower = "0.5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+uuid = { version = "1", features = ["v4", "serde"] }

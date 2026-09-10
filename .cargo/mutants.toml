@@ -1,0 +1,145 @@
+# cargo-mutants configuration — https://mutants.rs
+#
+# Read by local cargo-mutants and by Bazel through the label flag in `.bazelrc`.
+# The Bazel sweep has no survivor baseline, so any missed mutant fails its
+# shard. It runs weekly over every crate in the `mutants` workflow's schedule,
+# as well as on demand, so an entry added here is what the gate believes about
+# every later run: `docs/mutants-baseline.md` records when each crate's sweep
+# last passed.
+
+test_tool = "nextest"
+profile = "mutants"
+
+# A surviving mutant deep in the broker / log / raft paths is often only caught
+# by the slower in-process suites under each crate's tests/ dir. Give every
+# mutant a generous timeout relative to the unmutated baseline so a
+# legitimately-slower-but-correct run is not misreported as a timeout survivor.
+timeout_multiplier = 5.0
+minimum_test_timeout = 120
+
+exclude_globs = [
+    # The deterministic KRaft scenario simulator. It is library code behind the
+    # `scenarios` feature, but its consumer is documentation: `crabka-docgen`
+    # runs the scenarios in process and renders the recorded traces into the
+    # Mermaid diagrams. The algorithm it exercises is the same scheduler
+    # `crates/raft/tests/sim_harness` drives, and that is where the consensus
+    # behaviour is actually asserted. Mutating a trace recorder measures the
+    # diagrams, not the broker -- 143 survivors of a 187-survivor crate, none of
+    # them about anything a cluster does.
+    "crates/kraft-core/src/sim.rs",
+    # `krabka-broker`'s `main` is pure entrypoint glue: parse CLI args, derive
+    # the controller listener and self single-voter set, build `BrokerConfig`,
+    # hand it to `Broker::start`, then wait for a termination signal and
+    # controlled-shutdown. No unit-testable signal -- no test constructs the
+    # live broker from CLI args -- and it is exercised end to end by
+    # `tests/cli_smoke.rs`, which boots the real binary. A file glob rather than
+    # an `exclude_re` because name-regex exclusions do not reliably match
+    # struct-field-deletion mutants here.
+    "crates/broker/src/bin/**",
+    # krabka-audit's `verify` CLI: clap arg-parse plus VerifyReport->ExitCode
+    # glue. The verification logic lives in verify.rs and IS mutation-tested.
+    "crates/audit/src/bin/**",
+]
+
+exclude_re = [
+    # Removing the client-metrics shutdown call leaves the live OTLP worker
+    # waiting forever. The drain test detects that, but cargo-mutants can only
+    # classify the deliberately stuck process as a timeout.
+    "broker/src/client_metrics/mod\\.rs.*replace ClientMetrics::shutdown with \\(\\)",
+    # `InitProducerId`'s non-transactional arm sets `error_code: codes::NONE`,
+    # and `codes::NONE` is 0, which is the field's derived `Default`. Deleting
+    # the field encodes the same bytes, so the mutant is a true equivalent of
+    # one expression. It lives here rather than on a `#[cfg_attr(test,
+    # mutants::skip)]` because the rest of `handle` -- the two ACL arms, the
+    # KIP-939 2PC gates, the coordinator routing -- is wire-visible and is
+    # asserted by `handlers::init_producer_id::tests`.
+    "init_producer_id\\.rs.*delete .*error_code.*in handle",
+    # ---- crates/log ----------------------------------------------------
+    #
+    # The epoch guard in each append path is `epoch.is_known() && latest is none
+    # or epoch > it`. Relaxing `>` to `>=` only admits an epoch already
+    # recorded, and `append_to` refuses one it has seen -- so the checkpoint is
+    # unchanged either way. The `&&` half is real and is tested.
+    "replace > with >= in Log::append(_verbatim)?(_at)?$",
+    # `read_raw`'s early return for "past the segment, or at the limit" is an
+    # optimisation: the walk reaches the same empty result on its own, one
+    # skipping every batch and the other breaking on `base >= limit_offset`.
+    "replace \\|\\| with && in Segment::read_raw_with_buffer_cap",
+    # `last_offset` starts at `fetch_offset - 1` and is overwritten by every
+    # batch the walk selects. When the walk selects none the result is the empty
+    # read, which does not carry it. The initial value is never returned.
+    #
+    # Pinned to a line because `Segment::read_raw_with_buffer_cap` has two other
+    # `-` sites (the target-offset conversion and the byte-budget check) that
+    # this reasoning does not cover -- a function-name-only match would also
+    # swallow those. The cost is the same one paid by `read_at` below: this
+    # needs updating if a line above it in the file moves.
+    "read_raw\\.rs:75:.*replace - with [+/] in Segment::read_raw_with_buffer_cap",
+    #
+    # `read_raw_desc`'s twin of the same initial-value site
+    # (`segment/read_raw_desc.rs:78`) needs no entry of its own: the module is
+    # declared through the `sendfile_cfg!` macro (`segment.rs`), and
+    # cargo-mutants' source walk does not look inside macro invocations for
+    # `mod` items, so it never discovers the file to mutate it. Likewise
+    # `stamp_index.rs:106`, the `NotFound`-guard twin of `txn_index.rs`'s entry
+    # below, needs none: unlike the `txn_index` guard it is fully covered and
+    # both its mutants are caught.
+    #
+    # `max_timestamp > current` guards an assignment of that timestamp, so at
+    # equality both branches store the same value. (`<` is a different
+    # function and is tested.)
+    "replace > with >= in Segment::(append|recover_active_tail|truncate_to_relative)",
+    # `sync_data` has no in-process effect: it orders bytes against a crash,
+    # which a unit test cannot observe. Emptying the call changes nothing any
+    # assertion can reach.
+    # Matched without the replacement: a whole-function mutant's name carries
+    # the return type between the function and the `with`, so
+    # "flush with Ok(())" is never adjacent and never matches.
+    "replace (OffsetIndex|TimeIndex|Segment)::flush ",
+    # The `#[cfg(windows)]` `read_at`: not compiled on the platforms this is
+    # built for, so nothing that runs changes.
+    #
+    # Pinned to a line because the unix and windows implementations share the
+    # name `read_at`, and the unix one IS compiled -- matching on the name alone
+    # would exclude mutants that a test can and should kill. The cost is that
+    # this needs updating whenever anything above it in the file moves, which
+    # has already happened twice: `read_full_with` first shifted it from 73 to
+    # 87 in the old monolithic segment.rs, and splitting segment.rs into
+    # segment/io.rs moved it again, to 94.
+    "io\\.rs:94.*replace read_at ",
+    # Guards on `io::ErrorKind` -- `Interrupted` in the read loop, `NotFound`
+    # when a sidecar is absent. Reaching them needs the kernel to return that
+    # errno, which a test cannot ask a real file for.
+    "replace == with != in read_full_at",
+    "leader_epoch_checkpoint/file\\.rs.*e\\.kind\\(\\)",
+    "txn_index\\.rs:94",
+    # `crates/verified`'s `#[cfg(creusot)]` specification functions and lemma
+    # proof obligations carry `#[cfg_attr(test, mutants::skip)]` on their own
+    # definitions instead of a path-and-line regex here: cargo-mutants reads
+    # the attribute from source, so it works on a function a normal build does
+    # not compile, and it cannot rot the way a regex keyed to an old path or
+    # line number can. `aspect check-creusot-skip` keeps every such function
+    # covered.
+    #
+    # The rest of `verified`'s survivors are equivalent mutants: a comparison
+    # whose two branches yield the same value at the boundary the mutation
+    # moves. Left as they are rather than rewritten -- these bodies carry
+    # Creusot contracts, and a refactor invalidates a proof session that cannot
+    # be re-discharged here.
+    #
+    # `if lso < hw { lso } else { hw }` -- at equality both arms are the same.
+    "replace < with <= in fetch_visibility",
+    # `spso > log_start` picking the larger, and `difference > 0` clamping at
+    # zero: at equality each yields the value the other branch would.
+    "replace > with >= in effective_share_backlog",
+    # `count < majority` only saturates the tally; the answer is
+    # `count >= majority`, which one extra increment does not move.
+    "replace < with <= in candidate_has_majority",
+    # `cand > majority_offset` guards an assignment of `cand`; at equality it
+    # assigns the value already there.
+    "replace > with >= in recompute_high_watermark",
+    # `(byte & !COMPRESSION_MASK) | code` with codes 0..=3 and a 0x07 mask: the
+    # mask clears exactly the bits the code sets, so `|` and `^` compute the
+    # same function. An equivalent mutant, not a gap.
+    "replace \\| with \\^ in attrs_with_compression",
+]

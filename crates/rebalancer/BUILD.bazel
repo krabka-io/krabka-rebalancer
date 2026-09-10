@@ -1,0 +1,15 @@
+load("//bazel:defs.bzl", "crate_binary", "crate_library", "crate_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["Cargo.toml"])
+
+crate_library(name = "rebalancer")
+
+crate_binary(
+    name = "crabka-rebalancer",
+    crate_root = "src/bin/rebalancer.rs",
+    lib = ":rebalancer",
+)
+
+crate_tests(lib = "rebalancer")
