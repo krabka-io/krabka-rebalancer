@@ -51,6 +51,14 @@ tests:
             name: CRABKA_BOOTSTRAP_SERVERS
             value: kafka-bootstrap:9092
 
+  - it: preserves the default throttle as an integer string
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CRABKA_DEFAULT_THROTTLE_BYTES_PER_SEC
+            value: "50000000"
+
   - it: reads broker evacuation credential from an existing Secret
     set:
       brokerEvacuationAuth.existingSecret: operator-rebalancer-auth

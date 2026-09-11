@@ -70,7 +70,7 @@ maxMovementsPerProposal: 256
 proposalRingBufferSize: 20
 
 throttle:
-  defaultBytesPerSec: 50000000
+  defaultBytesPerSec: "50000000"
 
 executeDeadlineSecs: 1800
 reassignmentPollIntervalSecs: 5
