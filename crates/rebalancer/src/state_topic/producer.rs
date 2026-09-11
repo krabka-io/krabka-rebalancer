@@ -7,7 +7,6 @@ use bytes::Bytes;
 use crabka_client_core::Client;
 use crabka_protocol::{
     owned::{
-        metadata_request::{MetadataRequest, MetadataRequestTopic},
         metadata_response::MetadataResponse,
         produce_request::{PartitionProduceData, ProduceRequest, TopicProduceData},
         produce_response::ProduceResponse,
@@ -42,8 +41,8 @@ pub(crate) async fn produce_state(
         // Resolve it via Metadata on each attempt — also nudges the
         // broker to load the topic into its data plane if it hasn't
         // yet, which addresses the post-create transient window.
-        let topic_id = match resolve_topic_id(client, topic).await {
-            Ok(Some(id)) => id,
+        let (topic_id, leader_id) = match resolve_topic_route(client, topic).await {
+            Ok(Some(route)) => route,
             Ok(None) => {
                 last_transient = Some(3);
                 debug!(
@@ -58,6 +57,7 @@ pub(crate) async fn produce_state(
         match classify_send_result(
             send_once(
                 client,
+                leader_id,
                 topic,
                 topic_id,
                 &key_bytes,
@@ -87,31 +87,30 @@ pub(crate) async fn produce_state(
 /// metadata response has no entry for the topic. The topic then exists in the
 /// controller's metadata image but has not propagated to the broker on the
 /// other end of this connection. Treat that case as transient and retry.
-async fn resolve_topic_id(client: &Client, topic: &str) -> Result<Option<Uuid>, StateTopicError> {
-    let resp = client.send(metadata_request(topic)).await?;
-    Ok(topic_id_from_metadata(&resp, topic))
+async fn resolve_topic_route(
+    client: &Client,
+    topic: &str,
+) -> Result<Option<(Uuid, i32)>, StateTopicError> {
+    let resp = client.refresh_metadata().await?;
+    Ok(topic_route_from_metadata(&resp, topic))
 }
 
-fn metadata_request(topic: &str) -> MetadataRequest {
-    MetadataRequest {
-        topics: Some(vec![MetadataRequestTopic {
-            name: Some(topic.into()),
-            ..Default::default()
-        }]),
-        ..Default::default()
-    }
-}
-
-fn topic_id_from_metadata(resp: &MetadataResponse, topic: &str) -> Option<Uuid> {
-    resp.topics
+fn topic_route_from_metadata(resp: &MetadataResponse, topic: &str) -> Option<(Uuid, i32)> {
+    let topic = resp
+        .topics
         .iter()
         .find(|t| t.name.as_deref() == Some(topic))
-        .map(|t| t.topic_id)
-        .filter(|id| *id != Uuid::default())
+        .filter(|t| t.topic_id != Uuid::default())?;
+    let partition = topic
+        .partitions
+        .iter()
+        .find(|partition| partition.partition_index == 0 && partition.leader_id >= 0)?;
+    Some((topic.topic_id, partition.leader_id))
 }
 
 async fn send_once(
     client: &Client,
+    leader_id: i32,
     topic: &str,
     topic_id: Uuid,
     key: &Bytes,
@@ -119,7 +118,7 @@ async fn send_once(
     produce_timeout: crabka_units::Time,
 ) -> Result<(), StateTopicError> {
     let req = produce_request(topic, topic_id, key, value, produce_timeout);
-    let resp = client.send(req).await?;
+    let resp = client.broker(leader_id).send(req).await?;
     if let Some(code) = produce_response_error(&resp) {
         return Err(StateTopicError::ProduceErrorCode { code });
     }
@@ -189,7 +188,9 @@ mod tests {
     use assert2::check;
     use crabka_protocol::{
         owned::{
-            metadata_response::{MetadataResponse, MetadataResponseTopic},
+            metadata_response::{
+                MetadataResponse, MetadataResponsePartition, MetadataResponseTopic,
+            },
             produce_response::{PartitionProduceResponse, ProduceResponse, TopicProduceResponse},
         },
         records::RecordsPayload,
@@ -273,32 +274,28 @@ mod tests {
     }
 
     #[test]
-    fn metadata_request_scopes_to_state_topic_name() {
-        let req = metadata_request("state-topic");
-
-        let topics = req.topics.expect("topics");
-        assert2::assert!(
-            topics
-                .iter()
-                .map(|topic| topic.name.as_deref())
-                .collect::<Vec<_>>()
-                == vec![Some("state-topic")]
-        );
-    }
-
-    #[test]
-    fn topic_id_from_metadata_requires_matching_nonzero_topic_id() {
+    fn topic_route_from_metadata_requires_partition_zero_leader() {
         let wanted = Uuid([7; 16]);
         let resp = MetadataResponse {
             topics: vec![
                 MetadataResponseTopic {
                     name: Some("other-topic".into()),
                     topic_id: Uuid([9; 16]),
+                    partitions: vec![MetadataResponsePartition {
+                        partition_index: 0,
+                        leader_id: 4,
+                        ..Default::default()
+                    }],
                     ..Default::default()
                 },
                 MetadataResponseTopic {
                     name: Some("state-topic".into()),
                     topic_id: wanted,
+                    partitions: vec![MetadataResponsePartition {
+                        partition_index: 0,
+                        leader_id: 7,
+                        ..Default::default()
+                    }],
                     ..Default::default()
                 },
             ],
@@ -306,11 +303,11 @@ mod tests {
         };
 
         for (topic, want) in [
-            ("state-topic", Some(wanted)),
-            ("other-topic", Some(Uuid([9; 16]))),
+            ("state-topic", Some((wanted, 7))),
+            ("other-topic", Some((Uuid([9; 16]), 4))),
             ("missing", None),
         ] {
-            assert2::assert!(topic_id_from_metadata(&resp, topic) == want);
+            assert2::assert!(topic_route_from_metadata(&resp, topic) == want);
         }
     }
 
@@ -320,12 +317,17 @@ mod tests {
             topics: vec![MetadataResponseTopic {
                 name: Some("state-topic".into()),
                 topic_id: Uuid::default(),
+                partitions: vec![MetadataResponsePartition {
+                    partition_index: 0,
+                    leader_id: 7,
+                    ..Default::default()
+                }],
                 ..Default::default()
             }],
             ..Default::default()
         };
 
-        assert2::assert!(topic_id_from_metadata(&resp, "state-topic").is_none());
+        assert2::assert!(topic_route_from_metadata(&resp, "state-topic").is_none());
     }
 
     #[test]
@@ -371,10 +373,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn resolve_topic_id_propagates_metadata_send_errors() {
+    async fn resolve_topic_route_propagates_metadata_send_errors() {
         let client = unreachable_client("resolve-topic-id").await;
 
-        assert2::assert!(resolve_topic_id(&client, "__crabka_state").await.is_err());
+        assert2::assert!(
+            resolve_topic_route(&client, "__crabka_state")
+                .await
+                .is_err()
+        );
     }
 
     #[tokio::test]
@@ -385,6 +391,7 @@ mod tests {
         assert2::assert!(
             send_once(
                 &client,
+                7,
                 "__crabka_state",
                 Uuid([7; 16]),
                 &key,
