@@ -79,10 +79,30 @@ jobs:
       - run: helm lint charts/crabka-rebalancer --set bootstrapServers=localhost:9092
       - run: helm unittest charts/crabka-rebalancer
 
+  container:
+    name: container
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        if: github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: docker build --tag ghcr.io/krabka-io/krabka-rebalancer:${GITHUB_SHA} --file packaging/Dockerfile .
+      - run: docker run --rm ghcr.io/krabka-io/krabka-rebalancer:${GITHUB_SHA} --help
+      - if: github.event_name == 'push'
+        run: docker push ghcr.io/krabka-io/krabka-rebalancer:${GITHUB_SHA}
+
   gate:
     name: gate
     if: always()
-    needs: [bazel, cargo, supply-chain, helm]
+    needs: [bazel, cargo, supply-chain, helm, container]
     runs-on: ubuntu-latest
     steps:
       - env:

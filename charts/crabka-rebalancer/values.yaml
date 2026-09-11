@@ -3,7 +3,10 @@
 image:
   repository: ghcr.io/krabka-io/krabka-rebalancer
   tag: "" # defaults to .Chart.AppVersion when empty
+  digest: "" # wins over tag
   pullPolicy: IfNotPresent
+
+fullnameOverride: ""
 
 # REQUIRED: comma-separated host:port list of Crabka bootstrap brokers.
 bootstrapServers: ""
