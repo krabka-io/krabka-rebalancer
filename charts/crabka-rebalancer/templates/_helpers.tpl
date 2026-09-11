@@ -3,7 +3,7 @@ crabka-rebalancer
 {{- end -}}
 
 {{- define "rebalancer.fullname" -}}
-{{- printf "%s-%s" .Release.Name (include "rebalancer.name" .) | trunc 63 | trimSuffix "-" -}}
+{{- .Values.fullnameOverride | default (printf "%s-%s" .Release.Name (include "rebalancer.name" .)) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{- define "rebalancer.labels" -}}
@@ -21,5 +21,9 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{- define "rebalancer.image" -}}
 {{- $tag := .Values.image.tag | default .Chart.AppVersion -}}
+{{- if .Values.image.digest -}}
+{{- printf "%s@%s" .Values.image.repository .Values.image.digest -}}
+{{- else -}}
 {{- printf "%s:%s" .Values.image.repository $tag -}}
+{{- end -}}
 {{- end -}}

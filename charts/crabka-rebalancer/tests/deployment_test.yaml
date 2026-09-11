@@ -16,6 +16,18 @@ tests:
           path: spec.strategy.type
           value: Recreate
 
+  - it: supports the operator discovery name and immutable image
+    set:
+      fullnameOverride: m20-rebalancer
+      image.digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    asserts:
+      - equal:
+          path: metadata.name
+          value: m20-rebalancer
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/krabka-io/krabka-rebalancer@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
   - it: container exposes Connect-RPC port 9300
     asserts:
       - equal:
