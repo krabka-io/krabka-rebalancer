@@ -1,18 +1,18 @@
 //! Connect protocol smoke test. It builds the binary, runs it against a
-//! temporary single-broker Crabka, calls the Connect endpoint over HTTP+JSON,
+//! temporary single-broker Krabka, calls the Connect endpoint over HTTP+JSON,
 //! and asserts a sane response. It proves that the axum mount and the
 //! Connect-axum glue work end-to-end.
 //!
-//! The route format `/crabka.rebalancer.v1.Rebalancer/GetState` comes from the
+//! The route format `/krabka.rebalancer.v1.Rebalancer/GetState` comes from the
 //! `RebalancerServiceBuilder` codegen in
-//! `target/debug/build/crabka-rebalancer-*/out/crabka.rebalancer.v1.rs`. That
-//! codegen calls `router.route("/crabka.rebalancer.v1.Rebalancer/GetState",
+//! `target/debug/build/krabka-rebalancer-*/out/krabka.rebalancer.v1.rs`. That
+//! codegen calls `router.route("/krabka.rebalancer.v1.Rebalancer/GetState",
 //! ...)` verbatim, which matches the canonical Connect and gRPC path format
 //! `<package>.<Service>/<Method>`.
 
 use std::time::{Duration, Instant};
 
-use crabka_broker::{Broker, BrokerConfig};
+use krabka_broker::{Broker, BrokerConfig};
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn connect_get_state_over_http_json() {
@@ -32,7 +32,7 @@ async fn connect_get_state_over_http_json() {
     // cargo when an integration test in the same crate references the
     // binary target.
     let data_dir = tempfile::tempdir().unwrap();
-    let bin_path = env!("CARGO_BIN_EXE_crabka-rebalancer");
+    let bin_path = env!("CARGO_BIN_EXE_krabka-rebalancer");
     let mut child = tokio::process::Command::new(bin_path)
         .arg("--bootstrap-servers")
         .arg(broker_addr.to_string())
@@ -42,12 +42,12 @@ async fn connect_get_state_over_http_json() {
         .arg("1")
         .arg("--data-dir")
         .arg(data_dir.path())
-        .env("RUST_LOG", "crabka_rebalancer=info,warn")
+        .env("RUST_LOG", "krabka_rebalancer=info,warn")
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .kill_on_drop(true)
         .spawn()
-        .expect("spawn crabka-rebalancer");
+        .expect("spawn krabka-rebalancer");
 
     // 4. Wait for /readyz to become 200. The rebalancer flips /readyz
     // green only once the ingester has written its first snapshot, so a
@@ -73,7 +73,7 @@ async fn connect_get_state_over_http_json() {
     // 5. POST {} as JSON to the canonical Connect route for GetState.
     let resp = client
         .post(format!(
-            "http://{rebal_addr}/crabka.rebalancer.v1.Rebalancer/GetState"
+            "http://{rebal_addr}/krabka.rebalancer.v1.Rebalancer/GetState"
         ))
         .header("Content-Type", "application/json")
         .body("{}")
@@ -99,7 +99,7 @@ async fn connect_get_state_over_http_json() {
     // `invalid content-type: "application/json"; expecting "application/proto"`.
     let proto_resp = client
         .post(format!(
-            "http://{rebal_addr}/crabka.rebalancer.v1.Rebalancer/GetState"
+            "http://{rebal_addr}/krabka.rebalancer.v1.Rebalancer/GetState"
         ))
         .header("Content-Type", "application/proto")
         .body(Vec::<u8>::new())
@@ -139,7 +139,7 @@ async fn connect_execute_proposal_and_cancel_over_http_json() {
 
     let data_dir = tempfile::tempdir().unwrap();
 
-    let bin_path = env!("CARGO_BIN_EXE_crabka-rebalancer");
+    let bin_path = env!("CARGO_BIN_EXE_krabka-rebalancer");
     let mut child = tokio::process::Command::new(bin_path)
         .arg("--bootstrap-servers")
         .arg(broker_addr.to_string())
@@ -149,12 +149,12 @@ async fn connect_execute_proposal_and_cancel_over_http_json() {
         .arg("1")
         .arg("--data-dir")
         .arg(data_dir.path())
-        .env("RUST_LOG", "crabka_rebalancer=info,warn")
+        .env("RUST_LOG", "krabka_rebalancer=info,warn")
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .kill_on_drop(true)
         .spawn()
-        .expect("spawn crabka-rebalancer");
+        .expect("spawn krabka-rebalancer");
 
     let client = reqwest::Client::new();
     let deadline = Instant::now() + Duration::from_secs(15);
@@ -178,7 +178,7 @@ async fn connect_execute_proposal_and_cancel_over_http_json() {
     // wire-path test).
     let create = client
         .post(format!(
-            "http://{rebal_addr}/crabka.rebalancer.v1.Rebalancer/CreateProposal"
+            "http://{rebal_addr}/krabka.rebalancer.v1.Rebalancer/CreateProposal"
         ))
         .header("Content-Type", "application/json")
         .body(r#"{"mode":"PROPOSAL_MODE_FULL"}"#)
@@ -196,7 +196,7 @@ async fn connect_execute_proposal_and_cancel_over_http_json() {
     // ExecuteProposal on a zero-movements proposal returns FailedPrecondition.
     let exec = client
         .post(format!(
-            "http://{rebal_addr}/crabka.rebalancer.v1.Rebalancer/ExecuteProposal"
+            "http://{rebal_addr}/krabka.rebalancer.v1.Rebalancer/ExecuteProposal"
         ))
         .header("Content-Type", "application/json")
         .body(format!(r#"{{"id":"{id}"}}"#))

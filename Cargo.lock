@@ -754,49 +754,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crabka-rebalancer"
-version = "0.4.0"
-dependencies = [
- "anyhow",
- "arc-swap",
- "assert2",
- "async-trait",
- "axum",
- "bytes",
- "clap",
- "connectrpc-axum",
- "connectrpc-axum-build",
- "crabka-client-admin",
- "crabka-client-core",
- "crabka-metadata",
- "crabka-protocol",
- "crabka-units",
- "mutants",
- "num-traits",
- "parking_lot",
- "pbjson",
- "prometheus-client",
- "prost",
- "protoc-bin-vendored",
- "refined_type",
- "reqwest 0.13.5",
- "serde",
- "serde_json",
- "serde_yaml",
- "strum",
- "subtle",
- "temp-env",
- "tempfile",
- "thiserror",
- "tokio",
- "tokio-util",
- "tower",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
 name = "crabka-security"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1801,6 +1758,49 @@ checksum = "d8f198d1db720e4940b5a493201d199d9f24f568f8f746bd13706243a2f71598"
 dependencies = [
  "cfg-if",
  "cpufeatures",
+]
+
+[[package]]
+name = "krabka-rebalancer"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "arc-swap",
+ "assert2",
+ "async-trait",
+ "axum",
+ "bytes",
+ "clap",
+ "connectrpc-axum",
+ "connectrpc-axum-build",
+ "crabka-client-admin",
+ "crabka-client-core",
+ "crabka-metadata",
+ "crabka-protocol",
+ "crabka-units",
+ "mutants",
+ "num-traits",
+ "parking_lot",
+ "pbjson",
+ "prometheus-client",
+ "prost",
+ "protoc-bin-vendored",
+ "refined_type",
+ "reqwest 0.13.5",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "strum",
+ "subtle",
+ "temp-env",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tower",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

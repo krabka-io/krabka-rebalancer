@@ -10,3 +10,4 @@ appVersion: "0.3.6"
 home: https://github.com/krabka-io/krabka-rebalancer
 sources:
   - https://github.com/krabka-io/krabka-rebalancer
+icon: https://krabka-io.github.io/logo.png

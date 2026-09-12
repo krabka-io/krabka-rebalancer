@@ -35,7 +35,7 @@ fn rebalance_duration_buckets() -> [f64; 11] {
 /// Bundle of metric handles emitted by the rebalancer process.
 ///
 /// Metric names are deliberately bare, with no `_total` suffix and no prefix.
-/// The shared `Registry` applies the `crabka_rebalancer` prefix, as
+/// The shared `Registry` applies the `krabka_rebalancer` prefix, as
 /// [`crate::health::new_registry`] shows, and `prometheus-client` appends
 /// `_total` to `Counter` names automatically at encode time.
 #[derive(Clone)]
@@ -99,7 +99,7 @@ impl RebalancerMetrics {
         );
         // Counter names omit the `_total` suffix; `prometheus-client`
         // appends it automatically at encode time (so registering
-        // `snapshots` here renders as `crabka_rebalancer_snapshots_total`).
+        // `snapshots` here renders as `krabka_rebalancer_snapshots_total`).
         registry.register(
             "snapshots",
             "Total successful cluster-state snapshots",
@@ -132,7 +132,7 @@ impl RebalancerMetrics {
         );
         // `rebalances` is a Counter family; `prometheus-client` appends `_total`
         // and renders the `result` label, so this becomes
-        // `crabka_rebalancer_rebalances_total{result="..."}`.
+        // `krabka_rebalancer_rebalances_total{result="..."}`.
         registry.register(
             "rebalances",
             "Total optimizer rebalance computations, labelled by result (ok, no_movements, error)",
@@ -190,9 +190,9 @@ mod tests {
         let mut buf = String::new();
         prometheus_client::encoding::text::encode(&mut buf, &registry).unwrap();
         for needle in [
-            "crabka_rebalancer_snapshot_at_ms",
-            "crabka_rebalancer_snapshots_total",
-            "crabka_rebalancer_proposals_created_total",
+            "krabka_rebalancer_snapshot_at_ms",
+            "krabka_rebalancer_snapshots_total",
+            "krabka_rebalancer_proposals_created_total",
         ] {
             assert2::assert!(buf.contains(needle));
         }
@@ -235,10 +235,10 @@ mod tests {
         let mut buf = String::new();
         prometheus_client::encoding::text::encode(&mut buf, &registry).unwrap();
         for needle in [
-            "crabka_rebalancer_rebalances_total",
-            "crabka_rebalancer_rebalance_duration_seconds_bucket",
-            "crabka_rebalancer_rebalance_duration_seconds_count",
-            "crabka_rebalancer_pending_reassignments",
+            "krabka_rebalancer_rebalances_total",
+            "krabka_rebalancer_rebalance_duration_seconds_bucket",
+            "krabka_rebalancer_rebalance_duration_seconds_count",
+            "krabka_rebalancer_pending_reassignments",
         ] {
             assert2::assert!(buf.contains(needle));
         }

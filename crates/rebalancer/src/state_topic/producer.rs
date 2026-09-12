@@ -1,7 +1,7 @@
 //! Single-key produce path for the state topic. It is built directly on
 //! `crabka_client_core::Client`, to match the rebalancer's
 //! `ingest::admin_client` pattern. A one-key-per-write workload does not need
-//! the high-level `crabka-client-producer`.
+//! the high-level `krabka-client-producer`.
 
 use bytes::Bytes;
 use crabka_client_core::Client;
@@ -362,7 +362,7 @@ mod tests {
         assert2::assert!(
             produce_state(
                 &client,
-                "__crabka_state",
+                "__krabka_state",
                 "in_flight",
                 Some(Bytes::from_static(b"{}")),
                 &RebalancerRuntimePolicy::default(),
@@ -377,7 +377,7 @@ mod tests {
         let client = unreachable_client("resolve-topic-id").await;
 
         assert2::assert!(
-            resolve_topic_route(&client, "__crabka_state")
+            resolve_topic_route(&client, "__krabka_state")
                 .await
                 .is_err()
         );
@@ -392,7 +392,7 @@ mod tests {
             send_once(
                 &client,
                 7,
-                "__crabka_state",
+                "__krabka_state",
                 Uuid([7; 16]),
                 &key,
                 Some(Bytes::from_static(b"{}")),

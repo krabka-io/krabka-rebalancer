@@ -1,17 +1,17 @@
-# crabka-rebalancer
+# krabka-rebalancer
 
-[![Crates.io](https://img.shields.io/crates/v/crabka-rebalancer.svg)](https://crates.io/crates/crabka-rebalancer)
-[![Docs.rs](https://docs.rs/crabka-rebalancer/badge.svg)](https://docs.rs/crabka-rebalancer)
+[![Crates.io](https://img.shields.io/crates/v/krabka-rebalancer.svg)](https://crates.io/crates/krabka-rebalancer)
+[![Docs.rs](https://docs.rs/krabka-rebalancer/badge.svg)](https://docs.rs/krabka-rebalancer)
 [![CI](https://github.com/krabka-io/krabka-rebalancer/actions/workflows/ci.yml/badge.svg)](https://github.com/krabka-io/krabka-rebalancer/actions/workflows/ci.yml)
 
-Cruise-Control-equivalent partition rebalancer for Crabka clusters.
+Cruise-Control-equivalent partition rebalancer for Krabka clusters.
 
 This repository owns the standalone rebalancer service and its Helm chart for the [Krabka](https://github.com/krabka-io) ecosystem.
 
 ## Install
 
 ```sh
-cargo add crabka-rebalancer
+cargo add krabka-rebalancer
 ```
 
 For source builds, use either `cargo build --workspace` or `bazel build //...`.
@@ -22,11 +22,11 @@ Evaluate a leader-distribution goal against an in-memory cluster model:
 
 ```rust,no_run
 use std::sync::Arc;
-use crabka_rebalancer::capacity::BrokerCapacities;
-use crabka_rebalancer::goals::{GoalContext, leader_distribution::LeaderDistribution};
-use crabka_rebalancer::model::{BrokerView, ClusterState, PartitionView};
-use crabka_rebalancer::optimizer;
-use crabka_rebalancer::scraper::UsageStore;
+use krabka_rebalancer::capacity::BrokerCapacities;
+use krabka_rebalancer::goals::{GoalContext, leader_distribution::LeaderDistribution};
+use krabka_rebalancer::model::{BrokerView, ClusterState, PartitionView};
+use krabka_rebalancer::optimizer;
+use krabka_rebalancer::scraper::UsageStore;
 use crabka_units::percent;
 
 # fn run() -> Result<(), Box<dyn std::error::Error>> {
@@ -62,7 +62,7 @@ println!("{} proposed movements", out.proposal.movements.len());
 
 ## Documentation
 
-Read the API documentation at [docs.rs/crabka-rebalancer](https://docs.rs/crabka-rebalancer).
+Read the API documentation at [docs.rs/krabka-rebalancer](https://docs.rs/krabka-rebalancer).
 
 ## License
 

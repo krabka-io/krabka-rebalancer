@@ -489,7 +489,7 @@ mod tests {
     ) -> ExecutorState {
         let store = Arc::new(ProposalStore::new(20));
         store.insert(p);
-        let mut registry = prometheus_client::registry::Registry::with_prefix("crabka_rebalancer");
+        let mut registry = prometheus_client::registry::Registry::with_prefix("krabka_rebalancer");
         let metrics = RebalancerMetrics::register(&mut registry);
         ExecutorState {
             store,
@@ -691,7 +691,7 @@ mod tests {
 
         let store = Arc::new(ProposalStore::new(20));
         store.insert(p.clone());
-        let mut registry = prometheus_client::registry::Registry::with_prefix("crabka_rebalancer");
+        let mut registry = prometheus_client::registry::Registry::with_prefix("krabka_rebalancer");
         let metrics = RebalancerMetrics::register(&mut registry);
         let state = ExecutorState {
             store,

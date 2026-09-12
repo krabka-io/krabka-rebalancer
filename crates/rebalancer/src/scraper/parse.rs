@@ -1,7 +1,7 @@
 //! Scoped `OpenMetrics` text parser. It recognizes only three families:
-//! `crabka_broker_partition_bytes_in_total`,
-//! `crabka_broker_partition_bytes_out_total`, and
-//! `crabka_broker_partition_disk_bytes`. It skips everything else silently,
+//! `krabka_broker_partition_bytes_in_total`,
+//! `krabka_broker_partition_bytes_out_total`, and
+//! `krabka_broker_partition_disk_bytes`. It skips everything else silently,
 //! with no allocation and no panic.
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -50,10 +50,10 @@ fn parse_line(line: &str) -> Option<ParsedSample> {
     let labels = labels.strip_suffix('}')?;
 
     let metric = match name {
-        "crabka_broker_partition_bytes_in_total" => MetricKind::BytesIn,
-        "crabka_broker_partition_bytes_out_total" => MetricKind::BytesOut,
-        "crabka_broker_partition_disk_bytes" => MetricKind::DiskBytes,
-        "crabka_broker_partition_cpu_micros_total" => MetricKind::CpuMicros,
+        "krabka_broker_partition_bytes_in_total" => MetricKind::BytesIn,
+        "krabka_broker_partition_bytes_out_total" => MetricKind::BytesOut,
+        "krabka_broker_partition_disk_bytes" => MetricKind::DiskBytes,
+        "krabka_broker_partition_cpu_micros_total" => MetricKind::CpuMicros,
         _ => return None,
     };
 
@@ -94,8 +94,8 @@ mod tests {
     fn skips_blank_and_comment_lines_before_parsing() {
         let txt = r#"
 
-  # crabka_broker_partition_bytes_in_total{topic="ignored",partition="0"} 999
-crabka_broker_partition_bytes_in_total{topic="kept",partition="1"} 7
+  # krabka_broker_partition_bytes_in_total{topic="ignored",partition="0"} 999
+krabka_broker_partition_bytes_in_total{topic="kept",partition="1"} 7
 "#;
         let out = parse(txt);
         assert2::assert!(
@@ -111,11 +111,11 @@ crabka_broker_partition_bytes_in_total{topic="kept",partition="1"} 7
     fn parses_well_formed_counters() {
         for (txt, want_metric) in [
             (
-                "crabka_broker_partition_bytes_in_total{topic=\"t\",partition=\"0\"} 1024\n",
+                "krabka_broker_partition_bytes_in_total{topic=\"t\",partition=\"0\"} 1024\n",
                 MetricKind::BytesIn,
             ),
             (
-                "crabka_broker_partition_cpu_micros_total{topic=\"t\",partition=\"0\"} 1024\n",
+                "krabka_broker_partition_cpu_micros_total{topic=\"t\",partition=\"0\"} 1024\n",
                 MetricKind::CpuMicros,
             ),
         ] {
@@ -132,7 +132,7 @@ crabka_broker_partition_bytes_in_total{topic="kept",partition="1"} 7
 
     #[test]
     fn parses_a_gauge() {
-        let txt = r#"crabka_broker_partition_disk_bytes{topic="t",partition="5"} 1234567
+        let txt = r#"krabka_broker_partition_disk_bytes{topic="t",partition="5"} 1234567
 "#;
         let out = parse(txt);
         assert2::assert!(
@@ -147,12 +147,12 @@ crabka_broker_partition_bytes_in_total{topic="kept",partition="1"} 7
     #[test]
     fn mixed_metrics_only_known_families_surface() {
         let txt = r#"# HELP foo
-# TYPE crabka_broker_partition_bytes_in_total counter
-crabka_broker_partition_bytes_in_total{topic="t",partition="0"} 1
-crabka_broker_topic_bytes_in_total{topic="t"} 999
+# TYPE krabka_broker_partition_bytes_in_total counter
+krabka_broker_partition_bytes_in_total{topic="t",partition="0"} 1
+krabka_broker_topic_bytes_in_total{topic="t"} 999
 some_other_metric 7
-crabka_broker_partition_bytes_out_total{topic="t",partition="0"} 2
-crabka_broker_partition_cpu_micros_total{topic="t",partition="0"} 42
+krabka_broker_partition_bytes_out_total{topic="t",partition="0"} 2
+krabka_broker_partition_cpu_micros_total{topic="t",partition="0"} 42
 "#;
         let out = parse(txt);
         assert2::assert!(
@@ -167,13 +167,13 @@ crabka_broker_partition_cpu_micros_total{topic="t",partition="0"} 42
 
     #[test]
     fn malformed_line_is_skipped() {
-        let txt = "crabka_broker_partition_bytes_in_total{nope this is broken\n";
+        let txt = "krabka_broker_partition_bytes_in_total{nope this is broken\n";
         assert2::assert!(parse(txt).is_empty());
     }
 
     #[test]
     fn missing_partition_label_is_skipped() {
-        let txt = "crabka_broker_partition_bytes_in_total{topic=\"t\"} 1024\n";
+        let txt = "krabka_broker_partition_bytes_in_total{topic=\"t\"} 1024\n";
         assert2::assert!(parse(txt).is_empty());
     }
 }

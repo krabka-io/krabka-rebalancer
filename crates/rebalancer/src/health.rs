@@ -59,7 +59,7 @@ async fn metrics(State(s): State<HealthState>) -> impl IntoResponse {
 
 #[must_use]
 pub fn new_registry() -> Registry {
-    Registry::with_prefix("crabka_rebalancer")
+    Registry::with_prefix("krabka_rebalancer")
 }
 
 #[cfg(test)]

@@ -3,8 +3,8 @@ RUN apt-get update && apt-get install --yes --no-install-recommends clang cmake 
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY . .
-RUN cargo build --locked --release -p crabka-rebalancer --bin crabka-rebalancer
+RUN cargo build --locked --release -p krabka-rebalancer --bin krabka-rebalancer
 
 FROM gcr.io/distroless/cc-debian12:nonroot
-COPY --from=build /src/target/release/crabka-rebalancer /usr/bin/crabka-rebalancer
-ENTRYPOINT ["/usr/bin/crabka-rebalancer"]
+COPY --from=build /src/target/release/krabka-rebalancer /usr/bin/krabka-rebalancer
+ENTRYPOINT ["/usr/bin/krabka-rebalancer"]

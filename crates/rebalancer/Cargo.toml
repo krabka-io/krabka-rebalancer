@@ -1,23 +1,23 @@
 [package]
-name = "crabka-rebalancer"
+name = "krabka-rebalancer"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 rust-version.workspace = true
-description = "Cruise-Control-equivalent partition rebalancer for Crabka clusters"
+description = "Cruise-Control-equivalent partition rebalancer for Krabka clusters"
 repository = "https://github.com/krabka-io/krabka-rebalancer"
 homepage = "https://github.com/krabka-io/krabka-rebalancer"
-documentation = "https://docs.rs/crabka-rebalancer"
+documentation = "https://docs.rs/krabka-rebalancer"
 readme = "README.md"
-keywords = ["kafka", "rebalancer", "partitions", "crabka"]
+keywords = ["kafka", "rebalancer", "partitions", "krabka"]
 categories = ["algorithms", "database-implementations"]
 
 [lints]
 workspace = true
 
 [[bin]]
-name = "crabka-rebalancer"
+name = "krabka-rebalancer"
 path = "src/bin/rebalancer.rs"
 
 [dependencies]

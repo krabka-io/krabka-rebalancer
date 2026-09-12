@@ -13,5 +13,5 @@ alias(
 
 alias(
     name = "rebalancer_bin",
-    actual = "//crates/rebalancer:crabka-rebalancer",
+    actual = "//crates/rebalancer:krabka-rebalancer",
 )

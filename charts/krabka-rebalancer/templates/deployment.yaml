@@ -26,102 +26,102 @@ spec:
           image: {{ include "rebalancer.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: CRABKA_BOOTSTRAP_SERVERS
+            - name: KRABKA_BOOTSTRAP_SERVERS
               value: {{ .Values.bootstrapServers | quote }}
-            - name: CRABKA_REBALANCER_LISTEN_ADDR
+            - name: KRABKA_REBALANCER_LISTEN_ADDR
               value: {{ .Values.listenAddr | quote }}
             {{- if .Values.brokerEvacuationAuth.existingSecret }}
-            - name: CRABKA_REBALANCER_BROKER_EVACUATION_TOKEN_FILE
+            - name: KRABKA_REBALANCER_BROKER_EVACUATION_TOKEN_FILE
               value: /var/run/secrets/krabka-rebalancer/broker-evacuation-token
             {{- end }}
-            - name: CRABKA_SCRAPE_INTERVAL_SECS
+            - name: KRABKA_SCRAPE_INTERVAL_SECS
               value: {{ .Values.scrapeIntervalSecs | quote }}
-            - name: CRABKA_IMBALANCE_THRESHOLD_PCT
+            - name: KRABKA_IMBALANCE_THRESHOLD_PCT
               value: {{ .Values.imbalanceThresholdPct | quote }}
-            - name: CRABKA_MAX_MOVEMENTS_PER_PROPOSAL
+            - name: KRABKA_MAX_MOVEMENTS_PER_PROPOSAL
               value: {{ .Values.maxMovementsPerProposal | quote }}
-            - name: CRABKA_PROPOSAL_RING_BUFFER_SIZE
+            - name: KRABKA_PROPOSAL_RING_BUFFER_SIZE
               value: {{ .Values.proposalRingBufferSize | quote }}
-            - name: CRABKA_DEFAULT_THROTTLE_BYTES_PER_SEC
+            - name: KRABKA_DEFAULT_THROTTLE_BYTES_PER_SEC
               value: {{ .Values.throttle.defaultBytesPerSec | quote }}
-            - name: CRABKA_EXECUTE_DEADLINE_SECS
+            - name: KRABKA_EXECUTE_DEADLINE_SECS
               value: {{ .Values.executeDeadlineSecs | quote }}
-            - name: CRABKA_REASSIGNMENT_POLL_INTERVAL_SECS
+            - name: KRABKA_REASSIGNMENT_POLL_INTERVAL_SECS
               value: {{ .Values.reassignmentPollIntervalSecs | quote }}
-            - name: CRABKA_REASSIGNMENT_BATCH_SIZE
+            - name: KRABKA_REASSIGNMENT_BATCH_SIZE
               value: {{ .Values.reassignmentBatchSize | quote }}
-            - name: CRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT
+            - name: KRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT
               value: {{ .Values.reassignmentRequestTimeout | quote }}
-            - name: CRABKA_REBALANCER_RECOVERY_LOAD_POLL_INTERVAL
+            - name: KRABKA_REBALANCER_RECOVERY_LOAD_POLL_INTERVAL
               value: {{ .Values.runtime.recoveryLoadPollInterval | quote }}
-            - name: CRABKA_REBALANCER_EXECUTOR_DRAIN_TIMEOUT
+            - name: KRABKA_REBALANCER_EXECUTOR_DRAIN_TIMEOUT
               value: {{ .Values.runtime.executorDrainTimeout | quote }}
-            - name: CRABKA_REBALANCER_INGESTER_JOIN_TIMEOUT
+            - name: KRABKA_REBALANCER_INGESTER_JOIN_TIMEOUT
               value: {{ .Values.runtime.ingesterJoinTimeout | quote }}
-            - name: CRABKA_REBALANCER_SCRAPER_HTTP_TIMEOUT
+            - name: KRABKA_REBALANCER_SCRAPER_HTTP_TIMEOUT
               value: {{ .Values.runtime.scraperHttpTimeout | quote }}
-            - name: CRABKA_REBALANCER_CANCEL_DRAIN_TIMEOUT
+            - name: KRABKA_REBALANCER_CANCEL_DRAIN_TIMEOUT
               value: {{ .Values.runtime.cancelDrainTimeout | quote }}
-            - name: CRABKA_REBALANCER_CANCEL_DRAIN_POLL_INTERVAL
+            - name: KRABKA_REBALANCER_CANCEL_DRAIN_POLL_INTERVAL
               value: {{ .Values.runtime.cancelDrainPollInterval | quote }}
-            - name: CRABKA_REBALANCER_DETECTOR_HISTORY_CAPACITY
+            - name: KRABKA_REBALANCER_DETECTOR_HISTORY_CAPACITY
               value: {{ .Values.runtime.detectorHistoryCapacity | quote }}
-            - name: CRABKA_REBALANCER_STATE_TOPIC_CREATE_TIMEOUT
+            - name: KRABKA_REBALANCER_STATE_TOPIC_CREATE_TIMEOUT
               value: {{ .Values.runtime.stateTopicCreateTimeout | quote }}
-            - name: CRABKA_REBALANCER_STATE_LOADER_POLL_INTERVAL
+            - name: KRABKA_REBALANCER_STATE_LOADER_POLL_INTERVAL
               value: {{ .Values.runtime.stateLoaderPollInterval | quote }}
-            - name: CRABKA_REBALANCER_STATE_LOADER_QUIET_POLLS
+            - name: KRABKA_REBALANCER_STATE_LOADER_QUIET_POLLS
               value: {{ .Values.runtime.stateLoaderQuietPolls | quote }}
-            - name: CRABKA_REBALANCER_STATE_FETCH_MAX
+            - name: KRABKA_REBALANCER_STATE_FETCH_MAX
               value: {{ .Values.runtime.stateFetchMax | quote }}
-            - name: CRABKA_REBALANCER_STATE_PRODUCE_RETRY_ATTEMPTS
+            - name: KRABKA_REBALANCER_STATE_PRODUCE_RETRY_ATTEMPTS
               value: {{ .Values.runtime.stateProduceRetryAttempts | quote }}
-            - name: CRABKA_REBALANCER_STATE_PRODUCE_RETRY_BACKOFF
+            - name: KRABKA_REBALANCER_STATE_PRODUCE_RETRY_BACKOFF
               value: {{ .Values.runtime.stateProduceRetryBackoff | quote }}
-            - name: CRABKA_REBALANCER_STATE_PRODUCE_TIMEOUT
+            - name: KRABKA_REBALANCER_STATE_PRODUCE_TIMEOUT
               value: {{ .Values.runtime.stateProduceTimeout | quote }}
-            - name: CRABKA_REBALANCER_STATE_TOPIC_MIN_CLEANABLE_DIRTY_RATIO
+            - name: KRABKA_REBALANCER_STATE_TOPIC_MIN_CLEANABLE_DIRTY_RATIO
               value: {{ .Values.runtime.stateTopicMinCleanableDirtyRatio | quote }}
-            - name: CRABKA_REBALANCER_STATE_TOPIC_SEGMENT_INTERVAL
+            - name: KRABKA_REBALANCER_STATE_TOPIC_SEGMENT_INTERVAL
               value: {{ .Values.runtime.stateTopicSegmentInterval | quote }}
-            - name: CRABKA_MIN_TOPIC_LEADERS_PER_BROKER
+            - name: KRABKA_MIN_TOPIC_LEADERS_PER_BROKER
               value: {{ .Values.minTopicLeadersPerBroker | quote }}
             {{- if .Values.brokerCapacityFile }}
-            - name: CRABKA_BROKER_CAPACITY_FILE
+            - name: KRABKA_BROKER_CAPACITY_FILE
               value: {{ .Values.brokerCapacityFile | quote }}
             {{- else if .Values.brokerCapacities }}
-            - name: CRABKA_BROKER_CAPACITY_FILE
+            - name: KRABKA_BROKER_CAPACITY_FILE
               value: /etc/krabka-rebalancer/capacity.yaml
             {{- end }}
             {{- if .Values.metricsScrapeTargets }}
-            - name: CRABKA_METRICS_SCRAPE_TARGETS
+            - name: KRABKA_METRICS_SCRAPE_TARGETS
               value: {{ .Values.metricsScrapeTargets | quote }}
-            - name: CRABKA_METRICS_SCRAPE_INTERVAL_SECS
+            - name: KRABKA_METRICS_SCRAPE_INTERVAL_SECS
               value: {{ .Values.metricsScrapeIntervalSecs | quote }}
-            - name: CRABKA_METRICS_RETENTION_SECS
+            - name: KRABKA_METRICS_RETENTION_SECS
               value: {{ .Values.metricsRetentionSecs | quote }}
             {{- end }}
-            - name: CRABKA_DETECTOR_TICK_INTERVAL_SECS
+            - name: KRABKA_DETECTOR_TICK_INTERVAL_SECS
               value: {{ .Values.detector.tickIntervalSecs | quote }}
-            - name: CRABKA_DETECTOR_BROKER_DEATH_THRESHOLD_SECS
+            - name: KRABKA_DETECTOR_BROKER_DEATH_THRESHOLD_SECS
               value: {{ .Values.detector.brokerDeathThresholdSecs | quote }}
-            - name: CRABKA_DETECTOR_UNDER_REPLICATED_THRESHOLD_SECS
+            - name: KRABKA_DETECTOR_UNDER_REPLICATED_THRESHOLD_SECS
               value: {{ .Values.detector.underReplicatedThresholdSecs | quote }}
-            - name: CRABKA_DETECTOR_DISK_PRESSURE_PCT
+            - name: KRABKA_DETECTOR_DISK_PRESSURE_PCT
               value: {{ .Values.detector.diskPressurePct | quote }}
-            - name: CRABKA_DETECTOR_DISK_CRITICAL_PCT
+            - name: KRABKA_DETECTOR_DISK_CRITICAL_PCT
               value: {{ .Values.detector.diskCriticalPct | quote }}
-            - name: CRABKA_DETECTOR_SLOW_BROKER_MULTIPLIER
+            - name: KRABKA_DETECTOR_SLOW_BROKER_MULTIPLIER
               value: {{ .Values.detector.slowBrokerMultiplier | quote }}
-            - name: CRABKA_DETECTOR_SLOW_BROKER_MIN_CORES
+            - name: KRABKA_DETECTOR_SLOW_BROKER_MIN_CORES
               value: {{ .Values.detector.slowBrokerMinCores | quote }}
-            - name: CRABKA_DETECTOR_MUTE_WINDOW_SECS
+            - name: KRABKA_DETECTOR_MUTE_WINDOW_SECS
               value: {{ .Values.detector.muteWindowSecs | quote }}
-            - name: CRABKA_DETECTOR_AUTO_TRIGGER_ENABLED
+            - name: KRABKA_DETECTOR_AUTO_TRIGGER_ENABLED
               value: {{ .Values.detector.autoTriggerEnabled | quote }}
-            - name: CRABKA_ANOMALY_RING_BUFFER_SIZE
+            - name: KRABKA_ANOMALY_RING_BUFFER_SIZE
               value: {{ .Values.anomalyRingBufferSize | quote }}
-            - name: CRABKA_DATA_DIR
+            - name: KRABKA_DATA_DIR
               value: /var/lib/krabka-rebalancer
           ports:
             - name: connect-rpc
