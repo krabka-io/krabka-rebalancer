@@ -15,4 +15,4 @@ tests:
           value: ServiceAccount
       - equal:
           path: metadata.name
-          value: demo-crabka-rebalancer
+          value: demo-krabka-rebalancer

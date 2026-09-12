@@ -68,12 +68,12 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: CRABKA_REBALANCER_BROKER_EVACUATION_TOKEN_FILE
-            value: /var/run/secrets/crabka-rebalancer/broker-evacuation-token
+            value: /var/run/secrets/krabka-rebalancer/broker-evacuation-token
       - contains:
           path: spec.template.spec.containers[0].volumeMounts
           content:
             name: broker-evacuation-auth
-            mountPath: /var/run/secrets/crabka-rebalancer
+            mountPath: /var/run/secrets/krabka-rebalancer
             readOnly: true
       - equal:
           path: spec.template.spec.volumes[1].secret.secretName
@@ -88,10 +88,10 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].volumeMounts[0].mountPath
-          value: /var/lib/crabka-rebalancer
+          value: /var/lib/krabka-rebalancer
       - equal:
           path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
-          value: demo-crabka-rebalancer
+          value: demo-krabka-rebalancer
 
   - it: passes minTopicLeadersPerBroker env var
     set:
@@ -151,19 +151,19 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: CRABKA_BROKER_CAPACITY_FILE
-            value: /etc/crabka-rebalancer/capacity.yaml
+            value: /etc/krabka-rebalancer/capacity.yaml
       - contains:
           path: spec.template.spec.containers[0].volumeMounts
           content:
             name: capacity-config
-            mountPath: /etc/crabka-rebalancer
+            mountPath: /etc/krabka-rebalancer
             readOnly: true
       - contains:
           path: spec.template.spec.volumes
           content:
             name: capacity-config
             configMap:
-              name: demo-crabka-rebalancer-capacity
+              name: demo-krabka-rebalancer-capacity
 
   - it: passes metrics scrape env vars when metricsScrapeTargets is set
     set:

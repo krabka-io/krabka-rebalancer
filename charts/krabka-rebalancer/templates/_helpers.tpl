@@ -1,5 +1,5 @@
 {{- define "rebalancer.name" -}}
-crabka-rebalancer
+krabka-rebalancer
 {{- end -}}
 
 {{- define "rebalancer.fullname" -}}
