@@ -48,7 +48,7 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_BOOTSTRAP_SERVERS
+            name: KRABKA_BOOTSTRAP_SERVERS
             value: kafka-bootstrap:9092
 
   - it: preserves the default throttle as an integer string
@@ -56,7 +56,7 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_DEFAULT_THROTTLE_BYTES_PER_SEC
+            name: KRABKA_DEFAULT_THROTTLE_BYTES_PER_SEC
             value: "50000000"
 
   - it: reads broker evacuation credential from an existing Secret
@@ -67,7 +67,7 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_REBALANCER_BROKER_EVACUATION_TOKEN_FILE
+            name: KRABKA_REBALANCER_BROKER_EVACUATION_TOKEN_FILE
             value: /var/run/secrets/krabka-rebalancer/broker-evacuation-token
       - contains:
           path: spec.template.spec.containers[0].volumeMounts
@@ -100,7 +100,7 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_MIN_TOPIC_LEADERS_PER_BROKER
+            name: KRABKA_MIN_TOPIC_LEADERS_PER_BROKER
             value: "2"
 
   - it: passes reassignment request timeout as a human duration
@@ -110,7 +110,7 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT
+            name: KRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT
             value: 37ms
 
   - it: passes dimensioned runtime policy overrides
@@ -123,22 +123,22 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_REBALANCER_EXECUTOR_DRAIN_TIMEOUT
+            name: KRABKA_REBALANCER_EXECUTOR_DRAIN_TIMEOUT
             value: 37ms
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_REBALANCER_DETECTOR_HISTORY_CAPACITY
+            name: KRABKA_REBALANCER_DETECTOR_HISTORY_CAPACITY
             value: "7"
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_REBALANCER_STATE_FETCH_MAX
+            name: KRABKA_REBALANCER_STATE_FETCH_MAX
             value: 32KiB
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_REBALANCER_STATE_TOPIC_MIN_CLEANABLE_DIRTY_RATIO
+            name: KRABKA_REBALANCER_STATE_TOPIC_MIN_CLEANABLE_DIRTY_RATIO
             value: 2%
 
   - it: passes brokerCapacityFile env when brokerCapacities is set
@@ -150,7 +150,7 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_BROKER_CAPACITY_FILE
+            name: KRABKA_BROKER_CAPACITY_FILE
             value: /etc/krabka-rebalancer/capacity.yaml
       - contains:
           path: spec.template.spec.containers[0].volumeMounts
@@ -174,17 +174,17 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_METRICS_SCRAPE_TARGETS
+            name: KRABKA_METRICS_SCRAPE_TARGETS
             value: "1:broker1:9100,2:broker2:9100"
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_METRICS_SCRAPE_INTERVAL_SECS
+            name: KRABKA_METRICS_SCRAPE_INTERVAL_SECS
             value: "15"
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_METRICS_RETENTION_SECS
+            name: KRABKA_METRICS_RETENTION_SECS
             value: "3600"
 
   - it: passes detector env vars with safe defaults
@@ -192,17 +192,17 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_DETECTOR_TICK_INTERVAL_SECS
+            name: KRABKA_DETECTOR_TICK_INTERVAL_SECS
             value: "30"
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_DETECTOR_AUTO_TRIGGER_ENABLED
+            name: KRABKA_DETECTOR_AUTO_TRIGGER_ENABLED
             value: "false"
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_ANOMALY_RING_BUFFER_SIZE
+            name: KRABKA_ANOMALY_RING_BUFFER_SIZE
             value: "200"
 
   - it: detector auto-trigger env flips when enabled
@@ -213,10 +213,10 @@ tests:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_DETECTOR_AUTO_TRIGGER_ENABLED
+            name: KRABKA_DETECTOR_AUTO_TRIGGER_ENABLED
             value: "true"
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: CRABKA_DETECTOR_MUTE_WINDOW_SECS
+            name: KRABKA_DETECTOR_MUTE_WINDOW_SECS
             value: "600"

@@ -35,7 +35,7 @@ brokerCapacities: {}
 
 # Override path for the capacity file. When non-empty, takes
 # precedence over `brokerCapacities` — the chart sets
-# CRABKA_BROKER_CAPACITY_FILE to this path and does NOT render the
+# KRABKA_BROKER_CAPACITY_FILE to this path and does NOT render the
 # ConfigMap (operator is responsible for providing the file).
 brokerCapacityFile: ""
 

@@ -3,7 +3,7 @@
 //! `connectrpc-axum-build` 0.1.1 emits a *builder*, not a trait, at
 //! `pb::rebalancer_connect::RebalancerServiceBuilder`. Each method on the
 //! builder registers an axum handler under the canonical Connect route
-//! `/crabka.rebalancer.v1.Rebalancer/<Method>`. This module feeds it the
+//! `/krabka.rebalancer.v1.Rebalancer/<Method>`. This module feeds it the
 //! freestanding async fns from `handlers`.
 //!
 //! An `Extension(Arc<AppState>)` layer on the built router carries the

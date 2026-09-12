@@ -1,5 +1,5 @@
-//! `crabka-rebalancer`: a Cruise-Control-equivalent partition
-//! rebalancer for Crabka clusters.
+//! `krabka-rebalancer`: a Cruise-Control-equivalent partition
+//! rebalancer for Krabka clusters.
 
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 
@@ -8,7 +8,14 @@ use crabka_client_core::{
     ClientFrameMax, ConnectionDispatchQueueCapacity, ConnectionOptions,
     DEFAULT_CONNECTION_DISPATCH_QUEUE_CAPACITY,
 };
-use crabka_rebalancer::{
+use crabka_units::{
+    ByteRate, ByteSize, Ratio, Time,
+    convert::{ByteRateExt as _, StdDurationExt as _, TimeExt as _},
+    fraction, parse, percent,
+};
+#[cfg(test)]
+use crabka_units::{millis, secs};
+use krabka_rebalancer::{
     api::{GoalRegistry, handlers::AppState},
     config::{PositiveUsize, RebalancerRuntimePolicy},
     executor::{
@@ -22,13 +29,6 @@ use crabka_rebalancer::{
     metrics::RebalancerMetrics,
     model::{proposal::ProposalStatus, store::ProposalStore},
 };
-use crabka_units::{
-    ByteRate, ByteSize, Ratio, Time,
-    convert::{ByteRateExt as _, StdDurationExt as _, TimeExt as _},
-    fraction, parse, percent,
-};
-#[cfg(test)]
-use crabka_units::{millis, secs};
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
@@ -77,7 +77,7 @@ fn init_tracing() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "crabka_rebalancer=info,info".into()),
+                .unwrap_or_else(|_| "krabka_rebalancer=info,info".into()),
         )
         .init();
 }
@@ -87,7 +87,7 @@ fn prepare_data_dir(args: &Args) -> anyhow::Result<()> {
         listen = %args.listen_addr,
         bootstrap = %args.bootstrap_servers,
         data_dir = ?args.data_dir,
-        "crabka-rebalancer starting"
+        "krabka-rebalancer starting"
     );
     std::fs::create_dir_all(&args.data_dir)?;
     Ok(())
@@ -96,7 +96,7 @@ fn prepare_data_dir(args: &Args) -> anyhow::Result<()> {
 async fn connect_client(args: &Args) -> anyhow::Result<crabka_client_core::Client> {
     Ok(crabka_client_core::Client::builder()
         .bootstrap(args.bootstrap_servers.clone())
-        .client_id("crabka-rebalancer")
+        .client_id("krabka-rebalancer")
         .dispatch_queue_capacity(args.client_dispatch_queue_capacity)
         .frame_max(args.client_frame_max)
         .build()
@@ -105,24 +105,24 @@ async fn connect_client(args: &Args) -> anyhow::Result<crabka_client_core::Clien
 
 #[derive(Parser)]
 #[command(
-    name = "crabka-rebalancer",
+    name = "krabka-rebalancer",
     version,
     about = "Cruise-Control-equivalent partition rebalancer"
 )]
 struct Args {
     /// `host:port,host:port,...` of brokers to use for bootstrap.
-    #[arg(long, env = "CRABKA_BOOTSTRAP_SERVERS")]
+    #[arg(long, env = "KRABKA_BOOTSTRAP_SERVERS")]
     bootstrap_servers: String,
     #[arg(
         long,
-        env = "CRABKA_REBALANCER_CLIENT_DISPATCH_QUEUE_CAPACITY",
+        env = "KRABKA_REBALANCER_CLIENT_DISPATCH_QUEUE_CAPACITY",
         default_value_t = DEFAULT_CONNECTION_DISPATCH_QUEUE_CAPACITY,
         value_parser = parse_client_dispatch_queue_capacity
     )]
     client_dispatch_queue_capacity: usize,
     #[arg(
         long,
-        env = "CRABKA_REBALANCER_CLIENT_FRAME_MAX",
+        env = "KRABKA_REBALANCER_CLIENT_FRAME_MAX",
         default_value = "100MiB",
         value_parser = parse_client_frame_max
     )]
@@ -134,7 +134,7 @@ struct Args {
     /// Bind address for the Connect-RPC + operational HTTP server.
     #[arg(
         long,
-        env = "CRABKA_REBALANCER_LISTEN_ADDR",
+        env = "KRABKA_REBALANCER_LISTEN_ADDR",
         default_value = "0.0.0.0:9300"
     )]
     listen_addr: SocketAddr,
@@ -143,55 +143,55 @@ struct Args {
     /// An empty value disables broker evacuation.
     #[arg(
         long,
-        env = "CRABKA_REBALANCER_BROKER_EVACUATION_TOKEN",
+        env = "KRABKA_REBALANCER_BROKER_EVACUATION_TOKEN",
         default_value = ""
     )]
     broker_evacuation_token: String,
 
     /// File containing the bearer token authorizing broker evacuation.
     /// The file is read per request so projected Secret updates take effect.
-    #[arg(long, env = "CRABKA_REBALANCER_BROKER_EVACUATION_TOKEN_FILE")]
+    #[arg(long, env = "KRABKA_REBALANCER_BROKER_EVACUATION_TOKEN_FILE")]
     broker_evacuation_token_file: Option<PathBuf>,
 
     /// Cluster-state snapshot cadence.
-    #[arg(long, env = "CRABKA_SCRAPE_INTERVAL_SECS", default_value_t = 10)]
+    #[arg(long, env = "KRABKA_SCRAPE_INTERVAL_SECS", default_value_t = 10)]
     scrape_interval_secs: u64,
 
     /// `(max - min) * 100 / total` must exceed this for soft goals to act.
-    #[arg(long, env = "CRABKA_IMBALANCE_THRESHOLD_PCT", default_value_t = 10)]
+    #[arg(long, env = "KRABKA_IMBALANCE_THRESHOLD_PCT", default_value_t = 10)]
     imbalance_threshold_pct: u32,
 
     /// Minimum leader count per (broker, topic) pair for the
     /// `MinTopicLeadersPerBroker` goal. `0` (default) disables it.
-    #[arg(long, env = "CRABKA_MIN_TOPIC_LEADERS_PER_BROKER", default_value_t = 0)]
+    #[arg(long, env = "KRABKA_MIN_TOPIC_LEADERS_PER_BROKER", default_value_t = 0)]
     min_topic_leaders_per_broker: u32,
 
     /// Safety cap on the total number of movements per proposal.
-    #[arg(long, env = "CRABKA_MAX_MOVEMENTS_PER_PROPOSAL", default_value_t = 256)]
+    #[arg(long, env = "KRABKA_MAX_MOVEMENTS_PER_PROPOSAL", default_value_t = 256)]
     max_movements_per_proposal: usize,
 
     /// In-memory ring buffer capacity for recent proposals.
-    #[arg(long, env = "CRABKA_PROPOSAL_RING_BUFFER_SIZE", default_value_t = 20)]
+    #[arg(long, env = "KRABKA_PROPOSAL_RING_BUFFER_SIZE", default_value_t = 20)]
     proposal_ring_buffer_size: usize,
 
     /// On-disk persistence directory. Created if missing.
     #[arg(
         long,
-        env = "CRABKA_DATA_DIR",
-        default_value = "/var/lib/crabka-rebalancer"
+        env = "KRABKA_DATA_DIR",
+        default_value = "/var/lib/krabka-rebalancer"
     )]
     data_dir: PathBuf,
 
     /// Optional path to a per-broker capacity YAML file. When unset, all five
     /// capacity goals are no-ops.
-    #[arg(long, env = "CRABKA_BROKER_CAPACITY_FILE", default_value = "")]
+    #[arg(long, env = "KRABKA_BROKER_CAPACITY_FILE", default_value = "")]
     broker_capacity_file: String,
 
     /// Per-broker metric scrape targets. Format: "id:host:port,id:host:port,…".
     /// When set, overrides `--metrics-port` and uses these static targets
     /// instead of live discovery from the ingester's `Metadata` snapshot.
     /// An empty value falls back to targets discovered with `--metrics-port`.
-    #[arg(long, env = "CRABKA_METRICS_SCRAPE_TARGETS", default_value = "")]
+    #[arg(long, env = "KRABKA_METRICS_SCRAPE_TARGETS", default_value = "")]
     metrics_scrape_targets: String,
 
     /// Broker metrics-endpoint port used by live scrape-target discovery.
@@ -199,34 +199,34 @@ struct Args {
     /// When `--metrics-scrape-targets` is unset, the scraper derives its
     /// target list from the ingester's `Metadata` snapshot and addresses
     /// each broker at `host:METRICS_PORT`. The scraper ignores this port
-    /// when `--metrics-scrape-targets` is set. Default: `crabka-broker`'s
+    /// when `--metrics-scrape-targets` is set. Default: `krabka-broker`'s
     /// metrics port `9404`.
-    #[arg(long, env = "CRABKA_REBALANCER_METRICS_PORT", default_value_t = 9404)]
+    #[arg(long, env = "KRABKA_REBALANCER_METRICS_PORT", default_value_t = 9404)]
     metrics_port: u16,
 
     /// How often the scraper polls each target's /metrics endpoint.
     #[arg(
         long,
-        env = "CRABKA_METRICS_SCRAPE_INTERVAL_SECS",
+        env = "KRABKA_METRICS_SCRAPE_INTERVAL_SECS",
         default_value_t = 30
     )]
     metrics_scrape_interval_secs: u64,
 
     /// How long to retain scraped samples in the rolling window store. The
     /// default of 12h matches the longest window, `TwelveHour`.
-    #[arg(long, env = "CRABKA_METRICS_RETENTION_SECS", default_value_t = 43_200)]
+    #[arg(long, env = "KRABKA_METRICS_RETENTION_SECS", default_value_t = 43_200)]
     metrics_retention_secs: u64,
 
     /// How often the detector evaluates anomaly rules. `0` disables the
     /// detector entirely: it records no anomaly and runs no auto-trigger.
-    #[arg(long, env = "CRABKA_DETECTOR_TICK_INTERVAL_SECS", default_value_t = 30)]
+    #[arg(long, env = "KRABKA_DETECTOR_TICK_INTERVAL_SECS", default_value_t = 30)]
     detector_tick_interval_secs: u64,
 
     /// How long a broker must be absent from cluster snapshots before
     /// `BrokerDeath` fires.
     #[arg(
         long,
-        env = "CRABKA_DETECTOR_BROKER_DEATH_THRESHOLD_SECS",
+        env = "KRABKA_DETECTOR_BROKER_DEATH_THRESHOLD_SECS",
         default_value_t = 60
     )]
     detector_broker_death_threshold_secs: u64,
@@ -234,7 +234,7 @@ struct Args {
     /// How long ISR < replicas must persist before `UnderReplicatedPartitions` fires.
     #[arg(
         long,
-        env = "CRABKA_DETECTOR_UNDER_REPLICATED_THRESHOLD_SECS",
+        env = "KRABKA_DETECTOR_UNDER_REPLICATED_THRESHOLD_SECS",
         default_value_t = 120
     )]
     detector_under_replicated_threshold_secs: u64,
@@ -243,7 +243,7 @@ struct Args {
     /// fires Warning.
     #[arg(
         long,
-        env = "CRABKA_DETECTOR_DISK_PRESSURE_PCT",
+        env = "KRABKA_DETECTOR_DISK_PRESSURE_PCT",
         default_value_t = 0.85
     )]
     detector_disk_pressure_pct: f64,
@@ -251,7 +251,7 @@ struct Args {
     /// Disk usage fraction above which `DiskPressure` escalates to Critical.
     #[arg(
         long,
-        env = "CRABKA_DETECTOR_DISK_CRITICAL_PCT",
+        env = "KRABKA_DETECTOR_DISK_CRITICAL_PCT",
         default_value_t = 0.95
     )]
     detector_disk_critical_pct: f64,
@@ -259,7 +259,7 @@ struct Args {
     /// `SlowBroker` multiplier (× cluster median CPU cores).
     #[arg(
         long,
-        env = "CRABKA_DETECTOR_SLOW_BROKER_MULTIPLIER",
+        env = "KRABKA_DETECTOR_SLOW_BROKER_MULTIPLIER",
         default_value_t = 2.0
     )]
     detector_slow_broker_multiplier: f64,
@@ -268,13 +268,13 @@ struct Args {
     /// on idle clusters where the multiplier threshold is near zero.
     #[arg(
         long,
-        env = "CRABKA_DETECTOR_SLOW_BROKER_MIN_CORES",
+        env = "KRABKA_DETECTOR_SLOW_BROKER_MIN_CORES",
         default_value_t = 0.5
     )]
     detector_slow_broker_min_cores: f64,
 
     /// Default mute window applied after an anomaly auto-triggers a proposal.
-    #[arg(long, env = "CRABKA_DETECTOR_MUTE_WINDOW_SECS", default_value_t = 900)]
+    #[arg(long, env = "KRABKA_DETECTOR_MUTE_WINDOW_SECS", default_value_t = 900)]
     detector_mute_window_secs: u64,
 
     /// Master switch on auto-trigger. When false, the detector still
@@ -282,14 +282,14 @@ struct Args {
     /// Default: false. Operators must opt in.
     #[arg(
         long,
-        env = "CRABKA_DETECTOR_AUTO_TRIGGER_ENABLED",
+        env = "KRABKA_DETECTOR_AUTO_TRIGGER_ENABLED",
         default_value_t = false
     )]
     detector_auto_trigger_enabled: bool,
 
     /// In-memory and on-disk ring buffer size for anomaly history at
     /// `{data_dir}/anomalies.json`.
-    #[arg(long, env = "CRABKA_ANOMALY_RING_BUFFER_SIZE", default_value_t = 200)]
+    #[arg(long, env = "KRABKA_ANOMALY_RING_BUFFER_SIZE", default_value_t = 200)]
     anomaly_ring_buffer_size: usize,
 
     /// Name of the internal compacted topic the rebalancer uses to persist
@@ -297,8 +297,8 @@ struct Args {
     /// on first startup with `cleanup.policy=compact` and a single partition.
     #[arg(
         long,
-        env = "CRABKA_REBALANCER_STATE_TOPIC",
-        default_value = "__crabka_rebalancer_state"
+        env = "KRABKA_REBALANCER_STATE_TOPIC",
+        default_value = "__krabka_rebalancer_state"
     )]
     state_topic_name: String,
 
@@ -307,7 +307,7 @@ struct Args {
     /// with RF=1, to support single-broker dev clusters.
     #[arg(
         long,
-        env = "CRABKA_REBALANCER_STATE_TOPIC_REPLICATION",
+        env = "KRABKA_REBALANCER_STATE_TOPIC_REPLICATION",
         default_value_t = 3
     )]
     state_topic_replication: i16,
@@ -317,7 +317,7 @@ struct Args {
     /// load completes successfully.
     #[arg(
         long,
-        env = "CRABKA_REBALANCER_STATE_LOAD_TIMEOUT_SECS",
+        env = "KRABKA_REBALANCER_STATE_LOAD_TIMEOUT_SECS",
         default_value_t = 60
     )]
     state_load_timeout_secs: u64,
@@ -326,34 +326,34 @@ struct Args {
     /// `ExecuteProposalRequest.throttle_bytes_per_sec` is unset.
     #[arg(
         long,
-        env = "CRABKA_DEFAULT_THROTTLE_BYTES_PER_SEC",
+        env = "KRABKA_DEFAULT_THROTTLE_BYTES_PER_SEC",
         default_value_t = 50_000_000
     )]
     default_throttle_bytes_per_sec: i64,
 
     /// Per-execution deadline before the executor cancels in-flight
     /// reassignments and fails the proposal.
-    #[arg(long, env = "CRABKA_EXECUTE_DEADLINE_SECS", default_value_t = 1800)]
+    #[arg(long, env = "KRABKA_EXECUTE_DEADLINE_SECS", default_value_t = 1800)]
     execute_deadline_secs: u64,
 
     /// How often the executor polls `ListPartitionReassignments` during
     /// the Wait phase.
     #[arg(
         long,
-        env = "CRABKA_REASSIGNMENT_POLL_INTERVAL_SECS",
+        env = "KRABKA_REASSIGNMENT_POLL_INTERVAL_SECS",
         default_value_t = 5
     )]
     reassignment_poll_interval_secs: u64,
 
     /// Maximum movements per `AlterPartitionReassignments` request.
-    #[arg(long, env = "CRABKA_REASSIGNMENT_BATCH_SIZE", default_value_t = 200)]
+    #[arg(long, env = "KRABKA_REASSIGNMENT_BATCH_SIZE", default_value_t = 200)]
     reassignment_batch_size: usize,
 
     /// Kafka broker-side timeout for submitting or cancelling partition
     /// reassignments.
     #[arg(
         long,
-        env = "CRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT",
+        env = "KRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT",
         default_value = "60s",
         value_parser = crabka_units::parse::positive_time
     )]
@@ -362,37 +362,37 @@ struct Args {
 
 #[derive(Debug, clap::Args, Default)]
 struct RebalancerRuntimeOptions {
-    #[arg(long, env = "CRABKA_REBALANCER_RECOVERY_LOAD_POLL_INTERVAL", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_RECOVERY_LOAD_POLL_INTERVAL", value_parser = crabka_units::parse::positive_time)]
     recovery_load_poll_interval: Option<Time>,
-    #[arg(long, env = "CRABKA_REBALANCER_EXECUTOR_DRAIN_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_EXECUTOR_DRAIN_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
     executor_drain_timeout: Option<Time>,
-    #[arg(long, env = "CRABKA_REBALANCER_INGESTER_JOIN_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_INGESTER_JOIN_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
     ingester_join_timeout: Option<Time>,
-    #[arg(long, env = "CRABKA_REBALANCER_SCRAPER_HTTP_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_SCRAPER_HTTP_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
     scraper_http_timeout: Option<Time>,
-    #[arg(long, env = "CRABKA_REBALANCER_CANCEL_DRAIN_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_CANCEL_DRAIN_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
     cancel_drain_timeout: Option<Time>,
-    #[arg(long, env = "CRABKA_REBALANCER_CANCEL_DRAIN_POLL_INTERVAL", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_CANCEL_DRAIN_POLL_INTERVAL", value_parser = crabka_units::parse::positive_time)]
     cancel_drain_poll_interval: Option<Time>,
-    #[arg(long, env = "CRABKA_REBALANCER_DETECTOR_HISTORY_CAPACITY")]
+    #[arg(long, env = "KRABKA_REBALANCER_DETECTOR_HISTORY_CAPACITY")]
     detector_history_capacity: Option<PositiveUsize>,
-    #[arg(long, env = "CRABKA_REBALANCER_STATE_TOPIC_CREATE_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_TOPIC_CREATE_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
     state_topic_create_timeout: Option<Time>,
-    #[arg(long, env = "CRABKA_REBALANCER_STATE_LOADER_POLL_INTERVAL", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_LOADER_POLL_INTERVAL", value_parser = crabka_units::parse::positive_time)]
     state_loader_poll_interval: Option<Time>,
-    #[arg(long, env = "CRABKA_REBALANCER_STATE_LOADER_QUIET_POLLS")]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_LOADER_QUIET_POLLS")]
     state_loader_quiet_polls: Option<PositiveUsize>,
-    #[arg(long, env = "CRABKA_REBALANCER_STATE_FETCH_MAX", value_parser = crabka_units::parse::positive_byte_size)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_FETCH_MAX", value_parser = crabka_units::parse::positive_byte_size)]
     state_fetch_max: Option<ByteSize>,
-    #[arg(long, env = "CRABKA_REBALANCER_STATE_PRODUCE_RETRY_ATTEMPTS")]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_PRODUCE_RETRY_ATTEMPTS")]
     state_produce_retry_attempts: Option<PositiveUsize>,
-    #[arg(long, env = "CRABKA_REBALANCER_STATE_PRODUCE_RETRY_BACKOFF", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_PRODUCE_RETRY_BACKOFF", value_parser = crabka_units::parse::positive_time)]
     state_produce_retry_backoff: Option<Time>,
-    #[arg(long, env = "CRABKA_REBALANCER_STATE_PRODUCE_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_PRODUCE_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
     state_produce_timeout: Option<Time>,
-    #[arg(long, env = "CRABKA_REBALANCER_STATE_TOPIC_MIN_CLEANABLE_DIRTY_RATIO", value_parser = crabka_units::parse::positive_ratio)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_TOPIC_MIN_CLEANABLE_DIRTY_RATIO", value_parser = crabka_units::parse::positive_ratio)]
     state_topic_min_cleanable_dirty_ratio: Option<Ratio>,
-    #[arg(long, env = "CRABKA_REBALANCER_STATE_TOPIC_SEGMENT_INTERVAL", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_TOPIC_SEGMENT_INTERVAL", value_parser = crabka_units::parse::positive_time)]
     state_topic_segment_interval: Option<Time>,
 }
 
@@ -453,7 +453,7 @@ impl RebalancerRuntimeOptions {
 }
 
 struct StateTopicSetup {
-    backend: Arc<dyn crabka_rebalancer::state_topic::StateBackend>,
+    backend: Arc<dyn krabka_rebalancer::state_topic::StateBackend>,
 }
 
 fn parse_client_dispatch_queue_capacity(value: &str) -> Result<usize, String> {
@@ -480,7 +480,7 @@ async fn start_state_topic(
     let mut admin = crabka_client_admin::AdminClient::connect_with_options(
         &addrs,
         ConnectionOptions {
-            client_id: "crabka-rebalancer".to_owned(),
+            client_id: "krabka-rebalancer".to_owned(),
             dispatch_queue_capacity: ConnectionDispatchQueueCapacity::new(
                 args.client_dispatch_queue_capacity,
             )
@@ -491,7 +491,7 @@ async fn start_state_topic(
     )
     .await
     .map_err(|error| anyhow::anyhow!("admin client connect: {error}"))?;
-    crabka_rebalancer::state_topic::topic_admin::ensure_topic_with_policy(
+    krabka_rebalancer::state_topic::topic_admin::ensure_topic_with_policy(
         &mut admin,
         &args.state_topic_name,
         args.state_topic_replication,
@@ -501,15 +501,15 @@ async fn start_state_topic(
     .map_err(|error| anyhow::anyhow!("ensure state topic: {error}"))?;
 
     let client = Arc::new(client.clone());
-    let loaded = crabka_rebalancer::state_topic::LoadedState::new();
-    let backend: Arc<dyn crabka_rebalancer::state_topic::StateBackend> =
-        Arc::new(crabka_rebalancer::state_topic::StateTopic::new_with_policy(
+    let loaded = krabka_rebalancer::state_topic::LoadedState::new();
+    let backend: Arc<dyn krabka_rebalancer::state_topic::StateBackend> =
+        Arc::new(krabka_rebalancer::state_topic::StateTopic::new_with_policy(
             Arc::clone(&client),
             args.state_topic_name.clone(),
             loaded.clone(),
             runtime_policy,
         ));
-    let state_loader = crabka_rebalancer::state_topic::StateTopicLoader {
+    let state_loader = krabka_rebalancer::state_topic::StateTopicLoader {
         client,
         topic: args.state_topic_name.clone(),
         state: loaded.clone(),
@@ -539,8 +539,8 @@ async fn start_state_topic(
 
 fn spawn_recovery(
     executor_state: ExecutorState,
-    client: Arc<dyn crabka_rebalancer::executor::phases::ClientFacade>,
-    snapshot: crabka_rebalancer::ingest::SharedSnapshot,
+    client: Arc<dyn krabka_rebalancer::executor::phases::ClientFacade>,
+    snapshot: krabka_rebalancer::ingest::SharedSnapshot,
     goal_ctx: GoalContext,
     shutdown: CancellationToken,
     load_policy: (Time, Time),
@@ -596,7 +596,7 @@ fn spawn_recovery(
                 tokio::time::sleep(load_poll_interval.to_std()).await;
             }
             let latest = snapshot.load();
-            let valid = crabka_rebalancer::optimizer::remove_brokers_plan_is_current(
+            let valid = krabka_rebalancer::optimizer::remove_brokers_plan_is_current(
                 latest.as_ref().as_ref().expect("snapshot checked above"),
                 &proposal,
                 &goal_ctx,
@@ -664,8 +664,8 @@ async fn finish_shutdown(
 
 fn scraper_target_source(
     args: &Args,
-    snapshot: crabka_rebalancer::ingest::SharedSnapshot,
-) -> anyhow::Result<crabka_rebalancer::scraper::TargetSource> {
+    snapshot: krabka_rebalancer::ingest::SharedSnapshot,
+) -> anyhow::Result<krabka_rebalancer::scraper::TargetSource> {
     if args.metrics_scrape_targets.trim().is_empty() {
         info!(
             metrics_port = args.metrics_port,
@@ -673,12 +673,12 @@ fn scraper_target_source(
             retention_secs = args.metrics_retention_secs,
             "starting metrics scraper (discovered targets via Metadata)"
         );
-        Ok(crabka_rebalancer::scraper::TargetSource::Discovered {
+        Ok(krabka_rebalancer::scraper::TargetSource::Discovered {
             snapshot,
             metrics_port: args.metrics_port,
         })
     } else {
-        let targets = crabka_rebalancer::scraper::parse_targets(&args.metrics_scrape_targets)
+        let targets = krabka_rebalancer::scraper::parse_targets(&args.metrics_scrape_targets)
             .map_err(|error| {
                 anyhow::anyhow!(
                     "failed to parse --metrics-scrape-targets `{}`: {error}",
@@ -691,7 +691,7 @@ fn scraper_target_source(
             retention_secs = args.metrics_retention_secs,
             "starting metrics scraper (static targets)"
         );
-        Ok(crabka_rebalancer::scraper::TargetSource::Static(targets))
+        Ok(krabka_rebalancer::scraper::TargetSource::Static(targets))
     }
 }
 
@@ -709,7 +709,7 @@ async fn main() -> anyhow::Result<()> {
     let shutdown = CancellationToken::new();
     let mut registry = new_registry();
     let metrics = RebalancerMetrics::register(&mut registry);
-    let detector_metrics = crabka_rebalancer::detector::DetectorMetrics::register(&mut registry);
+    let detector_metrics = krabka_rebalancer::detector::DetectorMetrics::register(&mut registry);
     let registry = Arc::new(Mutex::new(registry));
     let store = Arc::new(ProposalStore::open(
         &args.data_dir,
@@ -746,15 +746,15 @@ async fn main() -> anyhow::Result<()> {
         state_topic: state_topic.clone(),
     };
 
-    let live_client: Arc<dyn crabka_rebalancer::executor::phases::ClientFacade> = Arc::new(
+    let live_client: Arc<dyn krabka_rebalancer::executor::phases::ClientFacade> = Arc::new(
         LiveClient::with_reassignment_request_timeout(client.clone(), reassignment_request_timeout),
     );
 
     // Load broker capacity config (optional).
     let broker_capacities = if args.broker_capacity_file.is_empty() {
-        std::sync::Arc::new(crabka_rebalancer::capacity::BrokerCapacities::default())
+        std::sync::Arc::new(krabka_rebalancer::capacity::BrokerCapacities::default())
     } else {
-        match crabka_rebalancer::capacity::load::load_from_path(std::path::Path::new(
+        match krabka_rebalancer::capacity::load::load_from_path(std::path::Path::new(
             &args.broker_capacity_file,
         )) {
             Ok(c) => {
@@ -777,8 +777,8 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    let usage_store = std::sync::Arc::new(crabka_rebalancer::scraper::UsageStore::new(
-        crabka_rebalancer::scraper::WindowConfig {
+    let usage_store = std::sync::Arc::new(krabka_rebalancer::scraper::UsageStore::new(
+        krabka_rebalancer::scraper::WindowConfig {
             scrape_interval: arg_secs(args.metrics_scrape_interval_secs),
             retention: arg_secs(args.metrics_retention_secs),
         },
@@ -786,7 +786,7 @@ async fn main() -> anyhow::Result<()> {
 
     let source = scraper_target_source(&args, snapshot.clone())?;
 
-    let scraper = crabka_rebalancer::scraper::Scraper::new_with_http_timeout(
+    let scraper = krabka_rebalancer::scraper::Scraper::new_with_http_timeout(
         source,
         arg_secs(args.metrics_scrape_interval_secs),
         usage_store.clone(),
@@ -797,7 +797,7 @@ async fn main() -> anyhow::Result<()> {
 
     let goal_registry = Arc::new(GoalRegistry::default_registry());
 
-    let anomaly_store = Arc::new(crabka_rebalancer::detector::AnomalyStore::open(
+    let anomaly_store = Arc::new(krabka_rebalancer::detector::AnomalyStore::open(
         &args.data_dir,
         args.anomaly_ring_buffer_size,
     )?);
@@ -823,7 +823,7 @@ async fn main() -> anyhow::Result<()> {
     );
 
     if detector_enabled(arg_secs(args.detector_tick_interval_secs)) {
-        let detector_cfg = crabka_rebalancer::detector::DetectorConfig {
+        let detector_cfg = krabka_rebalancer::detector::DetectorConfig {
             tick_interval: arg_secs(args.detector_tick_interval_secs),
             broker_death_threshold: arg_secs(args.detector_broker_death_threshold_secs),
             under_replicated_threshold: arg_secs(args.detector_under_replicated_threshold_secs),
@@ -841,10 +841,10 @@ async fn main() -> anyhow::Result<()> {
             broker_death_threshold_secs = args.detector_broker_death_threshold_secs,
             "starting detector"
         );
-        let detector = crabka_rebalancer::detector::Detector::new(
+        let detector = krabka_rebalancer::detector::Detector::new(
             detector_cfg,
             snapshot.clone(),
-            crabka_rebalancer::detector::DetectorDependencies {
+            krabka_rebalancer::detector::DetectorDependencies {
                 usage_store: usage_store.clone(),
                 capacities: broker_capacities.clone(),
                 anomaly_store: anomaly_store.clone(),
@@ -876,8 +876,8 @@ async fn main() -> anyhow::Result<()> {
         broker_evacuation_token_file: args.broker_evacuation_token_file.clone(),
     });
 
-    let connect_router = crabka_rebalancer::api::router(app_state);
-    let health_router = crabka_rebalancer::health::router(HealthState {
+    let connect_router = krabka_rebalancer::api::router(app_state);
+    let health_router = krabka_rebalancer::health::router(HealthState {
         snapshot: snapshot.clone(),
         registry,
         state_topic,
@@ -911,13 +911,13 @@ mod tests {
     #[test]
     fn client_resource_policy_parses_defaults_and_overrides() {
         let defaults =
-            Args::try_parse_from(["crabka-rebalancer", "--bootstrap-servers", "127.0.0.1:9092"])
+            Args::try_parse_from(["krabka-rebalancer", "--bootstrap-servers", "127.0.0.1:9092"])
                 .unwrap();
         assert2::assert!(defaults.client_dispatch_queue_capacity == 64);
         assert2::assert!(defaults.client_frame_max == crabka_units::mebibytes(100));
 
         let custom = Args::try_parse_from([
-            "crabka-rebalancer",
+            "krabka-rebalancer",
             "--bootstrap-servers",
             "127.0.0.1:9092",
             "--client-dispatch-queue-capacity",
@@ -935,7 +935,7 @@ mod tests {
         ] {
             assert2::assert!(
                 Args::try_parse_from([
-                    "crabka-rebalancer",
+                    "krabka-rebalancer",
                     "--bootstrap-servers",
                     "127.0.0.1:9092",
                     option,
@@ -949,7 +949,7 @@ mod tests {
     #[test]
     fn runtime_policy_parses_overrides_and_rejects_invalid_relations() {
         let args = Args::try_parse_from([
-            "crabka-rebalancer",
+            "krabka-rebalancer",
             "--bootstrap-servers",
             "127.0.0.1:9092",
             "--recovery-load-poll-interval",
@@ -969,7 +969,7 @@ mod tests {
         assert2::assert!(policy.state_topic_min_cleanable_dirty_ratio == percent(2));
 
         let invalid = Args::try_parse_from([
-            "crabka-rebalancer",
+            "krabka-rebalancer",
             "--bootstrap-servers",
             "127.0.0.1:9092",
             "--cancel-drain-timeout",
@@ -983,7 +983,7 @@ mod tests {
 
     #[test]
     fn runtime_policy_reads_environment_and_prefers_cli() {
-        const CHILD: &str = "CRABKA_REBALANCER_RUNTIME_POLICY_CHILD";
+        const CHILD: &str = "KRABKA_REBALANCER_RUNTIME_POLICY_CHILD";
         if std::env::var_os(CHILD).is_none() {
             let status = std::process::Command::new(std::env::current_exe().unwrap())
                 .args([
@@ -991,7 +991,7 @@ mod tests {
                     "tests::runtime_policy_reads_environment_and_prefers_cli",
                 ])
                 .env(CHILD, "1")
-                .env("CRABKA_REBALANCER_RECOVERY_LOAD_POLL_INTERVAL", "37ms")
+                .env("KRABKA_REBALANCER_RECOVERY_LOAD_POLL_INTERVAL", "37ms")
                 .status()
                 .unwrap();
             assert2::assert!(status.success());
@@ -999,7 +999,7 @@ mod tests {
         }
 
         let from_env =
-            Args::try_parse_from(["crabka-rebalancer", "--bootstrap-servers", "127.0.0.1:9092"])
+            Args::try_parse_from(["krabka-rebalancer", "--bootstrap-servers", "127.0.0.1:9092"])
                 .unwrap();
         assert2::assert!(
             from_env
@@ -1010,7 +1010,7 @@ mod tests {
                 == millis(37)
         );
         let from_cli = Args::try_parse_from([
-            "crabka-rebalancer",
+            "krabka-rebalancer",
             "--bootstrap-servers",
             "127.0.0.1:9092",
             "--recovery-load-poll-interval",
@@ -1029,7 +1029,7 @@ mod tests {
 
     #[test]
     fn client_resource_policy_reads_environment_and_prefers_cli() {
-        const CHILD: &str = "CRABKA_REBALANCER_CLIENT_RESOURCE_POLICY_CHILD";
+        const CHILD: &str = "KRABKA_REBALANCER_CLIENT_RESOURCE_POLICY_CHILD";
 
         if std::env::var_os(CHILD).is_none() {
             let status =
@@ -1039,8 +1039,8 @@ mod tests {
                         "tests::client_resource_policy_reads_environment_and_prefers_cli",
                     ])
                     .env(CHILD, "1")
-                    .env("CRABKA_REBALANCER_CLIENT_DISPATCH_QUEUE_CAPACITY", "7")
-                    .env("CRABKA_REBALANCER_CLIENT_FRAME_MAX", "32KiB")
+                    .env("KRABKA_REBALANCER_CLIENT_DISPATCH_QUEUE_CAPACITY", "7")
+                    .env("KRABKA_REBALANCER_CLIENT_FRAME_MAX", "32KiB")
                     .status()
                     .expect("child test");
             assert2::assert!(status.success());
@@ -1048,13 +1048,13 @@ mod tests {
         }
 
         let from_env =
-            Args::try_parse_from(["crabka-rebalancer", "--bootstrap-servers", "127.0.0.1:9092"])
+            Args::try_parse_from(["krabka-rebalancer", "--bootstrap-servers", "127.0.0.1:9092"])
                 .unwrap();
         assert2::assert!(from_env.client_dispatch_queue_capacity == 7);
         assert2::assert!(from_env.client_frame_max == crabka_units::kibibytes(32));
 
         let from_cli = Args::try_parse_from([
-            "crabka-rebalancer",
+            "krabka-rebalancer",
             "--bootstrap-servers",
             "127.0.0.1:9092",
             "--client-dispatch-queue-capacity",
@@ -1156,11 +1156,11 @@ mod tests {
             .lock()
             .expect("environment lock");
         temp_env::with_var(
-            "CRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT",
+            "KRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT",
             None::<&str>,
             || {
                 let defaults = Args::try_parse_from([
-                    "crabka-rebalancer",
+                    "krabka-rebalancer",
                     "--bootstrap-servers",
                     "127.0.0.1:9092",
                 ])
@@ -1170,7 +1170,7 @@ mod tests {
         );
 
         let custom = Args::try_parse_from([
-            "crabka-rebalancer",
+            "krabka-rebalancer",
             "--bootstrap-servers",
             "127.0.0.1:9092",
             "--reassignment-request-timeout",
@@ -1184,7 +1184,7 @@ mod tests {
     fn reassignment_request_timeout_rejects_invalid_protocol_values() {
         assert2::assert!(
             Args::try_parse_from([
-                "crabka-rebalancer",
+                "krabka-rebalancer",
                 "--bootstrap-servers",
                 "127.0.0.1:9092",
                 "--reassignment-request-timeout",
@@ -1194,7 +1194,7 @@ mod tests {
         );
         for value in ["0.5ms", "2147483648ms"] {
             let args = Args::try_parse_from([
-                "crabka-rebalancer",
+                "krabka-rebalancer",
                 "--bootstrap-servers",
                 "127.0.0.1:9092",
                 "--reassignment-request-timeout",
@@ -1202,7 +1202,7 @@ mod tests {
             ])
             .unwrap();
             assert2::assert!(
-                crabka_rebalancer::executor::client_impl::ReassignmentRequestTimeout::new(
+                krabka_rebalancer::executor::client_impl::ReassignmentRequestTimeout::new(
                     args.reassignment_request_timeout
                 )
                 .is_err()
@@ -1217,11 +1217,11 @@ mod tests {
             .lock()
             .expect("environment lock");
         temp_env::with_var(
-            "CRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT",
+            "KRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT",
             Some("41ms"),
             || {
                 let args = Args::try_parse_from([
-                    "crabka-rebalancer",
+                    "krabka-rebalancer",
                     "--bootstrap-servers",
                     "127.0.0.1:9092",
                 ])

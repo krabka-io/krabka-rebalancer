@@ -192,11 +192,11 @@ mod tests {
     #[tokio::test]
     async fn ensure_topic_submits_compacted_single_partition_topic_spec() {
         let mut admin = FakeAdmin {
-            outcomes: VecDeque::from([Ok(vec![ok("__crabka_state")])]),
+            outcomes: VecDeque::from([Ok(vec![ok("__krabka_state")])]),
             ..Default::default()
         };
 
-        ensure_topic(&mut admin, "__crabka_state", 3).await.unwrap();
+        ensure_topic(&mut admin, "__krabka_state", 3).await.unwrap();
 
         let expected_configs = BTreeMap::from([
             ("cleanup.policy".to_string(), "compact".to_string()),
@@ -216,14 +216,14 @@ mod tests {
                         )
                     }),
                 )
-            }) == Some((secs(10), Some(("__crabka_state", 1, 3, &expected_configs))))
+            }) == Some((secs(10), Some(("__krabka_state", 1, 3, &expected_configs))))
         );
     }
 
     #[tokio::test]
     async fn ensure_topic_applies_custom_runtime_policy() {
         let mut admin = FakeAdmin {
-            outcomes: VecDeque::from([Ok(vec![ok("__crabka_state")])]),
+            outcomes: VecDeque::from([Ok(vec![ok("__krabka_state")])]),
             ..Default::default()
         };
         let policy = RebalancerRuntimePolicy {
@@ -233,7 +233,7 @@ mod tests {
             ..Default::default()
         };
 
-        ensure_topic_with_policy(&mut admin, "__crabka_state", 3, &policy)
+        ensure_topic_with_policy(&mut admin, "__krabka_state", 3, &policy)
             .await
             .unwrap();
 
@@ -246,11 +246,11 @@ mod tests {
     #[tokio::test]
     async fn ensure_topic_propagates_non_retryable_create_error() {
         let mut admin = FakeAdmin {
-            outcomes: VecDeque::from([Ok(vec![error("__crabka_state", 42)])]),
+            outcomes: VecDeque::from([Ok(vec![error("__krabka_state", 42)])]),
             ..Default::default()
         };
 
-        let err = ensure_topic(&mut admin, "__crabka_state", 3)
+        let err = ensure_topic(&mut admin, "__krabka_state", 3)
             .await
             .unwrap_err();
 
@@ -263,12 +263,12 @@ mod tests {
     #[tokio::test]
     async fn try_create_topic_returns_requested_replication_factor_for_existing_topic() {
         let mut admin = FakeAdmin {
-            outcomes: VecDeque::from([Ok(vec![error("__crabka_state", 36)])]),
+            outcomes: VecDeque::from([Ok(vec![error("__krabka_state", 36)])]),
             ..Default::default()
         };
         let configs = BTreeMap::new();
 
-        let effective = try_create_topic(&mut admin, "__crabka_state", 3, &configs, secs(10))
+        let effective = try_create_topic(&mut admin, "__krabka_state", 3, &configs, secs(10))
             .await
             .unwrap();
 
@@ -279,14 +279,14 @@ mod tests {
     async fn invalid_requested_rf_retries_once_with_single_replica() {
         let mut admin = FakeAdmin {
             outcomes: VecDeque::from([
-                Ok(vec![error("__crabka_state", INVALID_REPLICATION_FACTOR)]),
-                Ok(vec![ok("__crabka_state")]),
+                Ok(vec![error("__krabka_state", INVALID_REPLICATION_FACTOR)]),
+                Ok(vec![ok("__krabka_state")]),
             ]),
             ..Default::default()
         };
         let configs = BTreeMap::new();
 
-        let effective = try_create_topic(&mut admin, "__crabka_state", 3, &configs, secs(10))
+        let effective = try_create_topic(&mut admin, "__krabka_state", 3, &configs, secs(10))
             .await
             .unwrap();
 
@@ -306,14 +306,14 @@ mod tests {
     async fn invalid_single_replica_rf_is_not_retried() {
         let mut admin = FakeAdmin {
             outcomes: VecDeque::from([
-                Ok(vec![error("__crabka_state", INVALID_REPLICATION_FACTOR)]),
-                Ok(vec![ok("__crabka_state")]),
+                Ok(vec![error("__krabka_state", INVALID_REPLICATION_FACTOR)]),
+                Ok(vec![ok("__krabka_state")]),
             ]),
             ..Default::default()
         };
         let configs = BTreeMap::new();
 
-        let err = try_create_topic(&mut admin, "__crabka_state", 1, &configs, secs(10))
+        let err = try_create_topic(&mut admin, "__krabka_state", 1, &configs, secs(10))
             .await
             .unwrap_err();
 

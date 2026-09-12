@@ -2,7 +2,7 @@
 //!
 //! This mirrors the shape of [`crate::metrics::RebalancerMetrics`]: a flat
 //! struct of `Counter` and `Gauge` handles, all registered against the shared
-//! `crabka_rebalancer_` registry, so they share the existing `/metrics`
+//! `krabka_rebalancer_` registry, so they share the existing `/metrics`
 //! endpoint.
 //!
 //! Explicit per-variant fields, rather than a `Family<AnomalyKind, _>`, keep
@@ -251,11 +251,11 @@ mod tests {
         let mut buf = String::new();
         prometheus_client::encoding::text::encode(&mut buf, &registry).unwrap();
         for needle in [
-            "crabka_rebalancer_anomalies_detected_broker_death_total",
-            "crabka_rebalancer_anomalies_resolved_slow_broker_total",
-            "crabka_rebalancer_auto_trigger_fired_disk_pressure_total",
-            "crabka_rebalancer_auto_trigger_skipped_executing_total",
-            "crabka_rebalancer_anomalies_open_under_replicated",
+            "krabka_rebalancer_anomalies_detected_broker_death_total",
+            "krabka_rebalancer_anomalies_resolved_slow_broker_total",
+            "krabka_rebalancer_auto_trigger_fired_disk_pressure_total",
+            "krabka_rebalancer_auto_trigger_skipped_executing_total",
+            "krabka_rebalancer_anomalies_open_under_replicated",
         ] {
             assert2::assert!(buf.contains(needle));
         }

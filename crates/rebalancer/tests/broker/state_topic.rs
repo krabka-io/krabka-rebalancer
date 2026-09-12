@@ -5,21 +5,21 @@
 
 use std::sync::Arc;
 
-use crabka_broker::{Broker, BrokerConfig};
 use crabka_client_admin::AdminClient;
 use crabka_client_core::Client;
-use crabka_rebalancer::{
+use crabka_units::{Time, bytes_per_sec, convert::StdDurationExt as _, secs};
+use krabka_broker::{Broker, BrokerConfig};
+use krabka_rebalancer::{
     config::RebalancerRuntimePolicy,
     executor::state::{InFlightFile, Phase},
     state_topic::{LoadedState, StateBackend, StateTopic, StateTopicLoader, topic_admin},
 };
-use crabka_units::{Time, bytes_per_sec, convert::StdDurationExt as _, secs};
 use tokio_util::sync::CancellationToken;
 
-/// Boot a single-broker in-process Crabka and return its bootstrap address.
+/// Boot a single-broker in-process Krabka and return its bootstrap address.
 /// The caller must keep the `BrokerHandle` and the `TempDir` alive for the
 /// whole test.
-async fn boot_broker() -> (crabka_broker::BrokerHandle, String, tempfile::TempDir) {
+async fn boot_broker() -> (krabka_broker::BrokerHandle, String, tempfile::TempDir) {
     let dir = tempfile::TempDir::new().expect("tempdir");
     let broker = Broker::start(BrokerConfig::for_tests(dir.path().to_path_buf()))
         .await

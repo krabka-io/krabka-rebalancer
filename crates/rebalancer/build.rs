@@ -9,7 +9,7 @@
 //! the vendored one.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let proto = "proto/crabka/rebalancer/v1/rebalancer.proto";
+    let proto = "proto/krabka/rebalancer/v1/rebalancer.proto";
     let protoc_path = protoc_bin_vendored::protoc_bin_path()?;
     connectrpc_axum_build::compile_protos(&[proto], &["proto"])
         .with_prost_config(move |config| {
@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn normalize_generated_docs_and_builder() -> Result<(), Box<dyn std::error::Error>> {
     let generated =
-        std::path::PathBuf::from(std::env::var("OUT_DIR")?).join("crabka.rebalancer.v1.rs");
+        std::path::PathBuf::from(std::env::var("OUT_DIR")?).join("krabka.rebalancer.v1.rs");
     let source = std::fs::read_to_string(&generated)?;
     let source = source
         .replace("ProtoBuf", "`Protobuf`")

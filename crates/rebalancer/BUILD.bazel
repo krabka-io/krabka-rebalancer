@@ -7,7 +7,7 @@ exports_files(["Cargo.toml"])
 crate_library(name = "rebalancer")
 
 crate_binary(
-    name = "crabka-rebalancer",
+    name = "krabka-rebalancer",
     crate_root = "src/bin/rebalancer.rs",
     lib = ":rebalancer",
 )

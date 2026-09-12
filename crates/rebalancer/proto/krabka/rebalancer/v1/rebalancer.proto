@@ -1,5 +1,5 @@
 syntax = "proto3";
-package crabka.rebalancer.v1;
+package krabka.rebalancer.v1;
 
 service Rebalancer {
   rpc GetState(GetStateRequest) returns (GetStateResponse);

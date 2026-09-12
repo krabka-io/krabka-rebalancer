@@ -387,7 +387,7 @@ impl AnomalySeverity {
 }
 // --- Connect service/client code ---
 # [allow (dead_code)] pub mod rebalancer_connect { # [allow (unused_imports)] use super :: * ; # [doc = r" Connect-only service builder (flexible extractors)"] #[must_use]
-pub struct RebalancerServiceBuilder < S = () > { pub router : axum :: Router < S > , } impl < S > RebalancerServiceBuilder < S > where S : Clone + Send + Sync + 'static , { pub fn new () -> Self { Self { router : axum :: Router :: new () , } } # [doc = r" Apply state to router, transforming to builder with new state"] pub fn with_state < S2 > (self , state : S) -> RebalancerServiceBuilder < S2 > { RebalancerServiceBuilder { router : self . router . with_state (state) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const GET_STATE_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn get_state < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: GetStateRequest , super :: GetStateResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: GetStateRequest , super :: GetStateResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/crabka.rebalancer.v1.Rebalancer/GetState" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const CREATE_PROPOSAL_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn create_proposal < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: CreateProposalRequest , super :: Proposal , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: CreateProposalRequest , super :: Proposal , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/crabka.rebalancer.v1.Rebalancer/CreateProposal" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const DRY_RUN_PROPOSAL_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn dry_run_proposal < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: DryRunProposalRequest , super :: DryRunResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: DryRunProposalRequest , super :: DryRunResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/crabka.rebalancer.v1.Rebalancer/DryRunProposal" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const GET_PROPOSAL_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn get_proposal < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: GetProposalRequest , super :: Proposal , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: GetProposalRequest , super :: Proposal , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/crabka.rebalancer.v1.Rebalancer/GetProposal" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const LIST_PROPOSALS_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn list_proposals < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: ListProposalsRequest , super :: ListProposalsResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: ListProposalsRequest , super :: ListProposalsResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/crabka.rebalancer.v1.Rebalancer/ListProposals" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const EXECUTE_PROPOSAL_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn execute_proposal < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: ExecuteProposalRequest , super :: ExecuteProposalResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: ExecuteProposalRequest , super :: ExecuteProposalResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/crabka.rebalancer.v1.Rebalancer/ExecuteProposal" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const CANCEL_EXECUTION_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn cancel_execution < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: CancelExecutionRequest , super :: CancelExecutionResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: CancelExecutionRequest , super :: CancelExecutionResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/crabka.rebalancer.v1.Rebalancer/CancelExecution" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const GET_ANOMALIES_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn get_anomalies < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: GetAnomaliesRequest , super :: GetAnomaliesResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: GetAnomaliesRequest , super :: GetAnomaliesResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/crabka.rebalancer.v1.Rebalancer/GetAnomalies" , method_router) , } } } impl < S > Default for RebalancerServiceBuilder < S > where S : Clone + Send + Sync + 'static , { fn default () -> Self { Self :: new () } } impl RebalancerServiceBuilder < () > { # [doc = r" Build the final Connect RPC router with all registered handlers."] # [doc = r""] # [doc = r" Use [`MakeServiceBuilder`] to apply [`ConnectLayer`] and combine"] # [doc = r" with other services."] # [doc = r""] # [doc = r" [`MakeServiceBuilder`]: connectrpc_axum::MakeServiceBuilder"] # [doc = r" [`ConnectLayer`]: connectrpc_axum::ConnectLayer"] pub fn build (self) -> axum :: Router < () > { self . router } # [doc = r" Build with default layers applied via [`MakeServiceBuilder`]."] # [doc = r""] # [doc = r" This is a convenience method that wraps the router with"] # [doc = r" `MakeServiceBuilder::new()` which provides:"] # [doc = r" - Default gzip compression/decompression"] # [doc = r" - [`ConnectLayer`] with default settings"] # [doc = r""] # [doc = r" For custom configuration, use `build()` and configure"] # [doc = r" `MakeServiceBuilder` manually."] # [doc = r""] # [doc = r" [`MakeServiceBuilder`]: connectrpc_axum::MakeServiceBuilder"] # [doc = r" [`ConnectLayer`]: connectrpc_axum::ConnectLayer"] pub fn build_connect (self) -> axum :: Router < () > { connectrpc_axum :: MakeServiceBuilder :: new () . add_router (self . router) . build () } } }
+pub struct RebalancerServiceBuilder < S = () > { pub router : axum :: Router < S > , } impl < S > RebalancerServiceBuilder < S > where S : Clone + Send + Sync + 'static , { pub fn new () -> Self { Self { router : axum :: Router :: new () , } } # [doc = r" Apply state to router, transforming to builder with new state"] pub fn with_state < S2 > (self , state : S) -> RebalancerServiceBuilder < S2 > { RebalancerServiceBuilder { router : self . router . with_state (state) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const GET_STATE_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn get_state < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: GetStateRequest , super :: GetStateResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: GetStateRequest , super :: GetStateResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/krabka.rebalancer.v1.Rebalancer/GetState" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const CREATE_PROPOSAL_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn create_proposal < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: CreateProposalRequest , super :: Proposal , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: CreateProposalRequest , super :: Proposal , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/krabka.rebalancer.v1.Rebalancer/CreateProposal" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const DRY_RUN_PROPOSAL_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn dry_run_proposal < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: DryRunProposalRequest , super :: DryRunResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: DryRunProposalRequest , super :: DryRunResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/krabka.rebalancer.v1.Rebalancer/DryRunProposal" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const GET_PROPOSAL_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn get_proposal < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: GetProposalRequest , super :: Proposal , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: GetProposalRequest , super :: Proposal , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/krabka.rebalancer.v1.Rebalancer/GetProposal" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const LIST_PROPOSALS_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn list_proposals < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: ListProposalsRequest , super :: ListProposalsResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: ListProposalsRequest , super :: ListProposalsResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/krabka.rebalancer.v1.Rebalancer/ListProposals" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const EXECUTE_PROPOSAL_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn execute_proposal < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: ExecuteProposalRequest , super :: ExecuteProposalResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: ExecuteProposalRequest , super :: ExecuteProposalResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/krabka.rebalancer.v1.Rebalancer/ExecuteProposal" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const CANCEL_EXECUTION_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn cancel_execution < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: CancelExecutionRequest , super :: CancelExecutionResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: CancelExecutionRequest , super :: CancelExecutionResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/krabka.rebalancer.v1.Rebalancer/CancelExecution" , method_router) , } } # [doc = r" Idempotency level for this RPC method."] # [allow (dead_code)] pub const GET_ANOMALIES_IDEMPOTENCY : connectrpc_axum :: IdempotencyLevel = connectrpc_axum :: IdempotencyLevel :: Unknown ; # [doc = "Register a handler for this RPC method (unary)"] pub fn get_anomalies < F , T > (self , handler : F) -> RebalancerServiceBuilder < S > where connectrpc_axum :: handler :: ConnectHandlerWrapper < F , super :: GetAnomaliesRequest , super :: GetAnomaliesResponse , > : axum :: handler :: Handler < T , S > , F : Clone + Send + Sync + 'static , T : 'static , { let method_router = connectrpc_axum :: handler :: post_connect :: < F , T , S , super :: GetAnomaliesRequest , super :: GetAnomaliesResponse , > (handler) ; RebalancerServiceBuilder { router : self . router . route ("/krabka.rebalancer.v1.Rebalancer/GetAnomalies" , method_router) , } } } impl < S > Default for RebalancerServiceBuilder < S > where S : Clone + Send + Sync + 'static , { fn default () -> Self { Self :: new () } } impl RebalancerServiceBuilder < () > { # [doc = r" Build the final Connect RPC router with all registered handlers."] # [doc = r""] # [doc = r" Use [`MakeServiceBuilder`] to apply [`ConnectLayer`] and combine"] # [doc = r" with other services."] # [doc = r""] # [doc = r" [`MakeServiceBuilder`]: connectrpc_axum::MakeServiceBuilder"] # [doc = r" [`ConnectLayer`]: connectrpc_axum::ConnectLayer"] pub fn build (self) -> axum :: Router < () > { self . router } # [doc = r" Build with default layers applied via [`MakeServiceBuilder`]."] # [doc = r""] # [doc = r" This is a convenience method that wraps the router with"] # [doc = r" `MakeServiceBuilder::new()` which provides:"] # [doc = r" - Default gzip compression/decompression"] # [doc = r" - [`ConnectLayer`] with default settings"] # [doc = r""] # [doc = r" For custom configuration, use `build()` and configure"] # [doc = r" `MakeServiceBuilder` manually."] # [doc = r""] # [doc = r" [`MakeServiceBuilder`]: connectrpc_axum::MakeServiceBuilder"] # [doc = r" [`ConnectLayer`]: connectrpc_axum::ConnectLayer"] pub fn build_connect (self) -> axum :: Router < () > { connectrpc_axum :: MakeServiceBuilder :: new () . add_router (self . router) . build () } } }
 // --- pbjson serde implementations ---
 impl serde::Serialize for Anomaly {
     #[allow(deprecated)]
@@ -427,7 +427,7 @@ impl serde::Serialize for Anomaly {
         if !self.details.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.Anomaly", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.Anomaly", len)?;
         if !self.id.is_empty() {
             struct_ser.serialize_field("id", &self.id)?;
         }
@@ -552,7 +552,7 @@ impl<'de> serde::Deserialize<'de> for Anomaly {
             type Value = Anomaly;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.Anomaly")
+                formatter.write_str("struct krabka.rebalancer.v1.Anomaly")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<Anomaly, V::Error>
@@ -655,7 +655,7 @@ impl<'de> serde::Deserialize<'de> for Anomaly {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.Anomaly", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.Anomaly", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for AnomalyKey {
@@ -669,7 +669,7 @@ impl serde::Serialize for AnomalyKey {
         if self.inner.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.AnomalyKey", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.AnomalyKey", len)?;
         if let Some(v) = self.inner.as_ref() {
             match v {
                 anomaly_key::Inner::Broker(v) => {
@@ -740,7 +740,7 @@ impl<'de> serde::Deserialize<'de> for AnomalyKey {
             type Value = AnomalyKey;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.AnomalyKey")
+                formatter.write_str("struct krabka.rebalancer.v1.AnomalyKey")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<AnomalyKey, V::Error>
@@ -777,7 +777,7 @@ impl<'de> serde::Deserialize<'de> for AnomalyKey {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.AnomalyKey", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.AnomalyKey", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for AnomalyKind {
@@ -954,7 +954,7 @@ impl serde::Serialize for Broker {
         if self.rack.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.Broker", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.Broker", len)?;
         if self.id != 0 {
             struct_ser.serialize_field("id", &self.id)?;
         }
@@ -1026,7 +1026,7 @@ impl<'de> serde::Deserialize<'de> for Broker {
             type Value = Broker;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.Broker")
+                formatter.write_str("struct krabka.rebalancer.v1.Broker")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<Broker, V::Error>
@@ -1077,7 +1077,7 @@ impl<'de> serde::Deserialize<'de> for Broker {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.Broker", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.Broker", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for BrokerPartitionKey {
@@ -1097,7 +1097,7 @@ impl serde::Serialize for BrokerPartitionKey {
         if self.partition != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.BrokerPartitionKey", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.BrokerPartitionKey", len)?;
         if self.broker != 0 {
             struct_ser.serialize_field("broker", &self.broker)?;
         }
@@ -1163,7 +1163,7 @@ impl<'de> serde::Deserialize<'de> for BrokerPartitionKey {
             type Value = BrokerPartitionKey;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.BrokerPartitionKey")
+                formatter.write_str("struct krabka.rebalancer.v1.BrokerPartitionKey")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<BrokerPartitionKey, V::Error>
@@ -1206,7 +1206,7 @@ impl<'de> serde::Deserialize<'de> for BrokerPartitionKey {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.BrokerPartitionKey", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.BrokerPartitionKey", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for CancelExecutionRequest {
@@ -1220,7 +1220,7 @@ impl serde::Serialize for CancelExecutionRequest {
         if !self.id.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.CancelExecutionRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.CancelExecutionRequest", len)?;
         if !self.id.is_empty() {
             struct_ser.serialize_field("id", &self.id)?;
         }
@@ -1274,7 +1274,7 @@ impl<'de> serde::Deserialize<'de> for CancelExecutionRequest {
             type Value = CancelExecutionRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.CancelExecutionRequest")
+                formatter.write_str("struct krabka.rebalancer.v1.CancelExecutionRequest")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<CancelExecutionRequest, V::Error>
@@ -1297,7 +1297,7 @@ impl<'de> serde::Deserialize<'de> for CancelExecutionRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.CancelExecutionRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.CancelExecutionRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for CancelExecutionResponse {
@@ -1311,7 +1311,7 @@ impl serde::Serialize for CancelExecutionResponse {
         if self.proposal.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.CancelExecutionResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.CancelExecutionResponse", len)?;
         if let Some(v) = self.proposal.as_ref() {
             struct_ser.serialize_field("proposal", v)?;
         }
@@ -1365,7 +1365,7 @@ impl<'de> serde::Deserialize<'de> for CancelExecutionResponse {
             type Value = CancelExecutionResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.CancelExecutionResponse")
+                formatter.write_str("struct krabka.rebalancer.v1.CancelExecutionResponse")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<CancelExecutionResponse, V::Error>
@@ -1388,7 +1388,7 @@ impl<'de> serde::Deserialize<'de> for CancelExecutionResponse {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.CancelExecutionResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.CancelExecutionResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for CreateProposalRequest {
@@ -1408,7 +1408,7 @@ impl serde::Serialize for CreateProposalRequest {
         if !self.brokers.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.CreateProposalRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.CreateProposalRequest", len)?;
         if !self.goals.is_empty() {
             struct_ser.serialize_field("goals", &self.goals)?;
         }
@@ -1476,7 +1476,7 @@ impl<'de> serde::Deserialize<'de> for CreateProposalRequest {
             type Value = CreateProposalRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.CreateProposalRequest")
+                formatter.write_str("struct krabka.rebalancer.v1.CreateProposalRequest")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<CreateProposalRequest, V::Error>
@@ -1518,7 +1518,7 @@ impl<'de> serde::Deserialize<'de> for CreateProposalRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.CreateProposalRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.CreateProposalRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for DryRunProposalRequest {
@@ -1532,7 +1532,7 @@ impl serde::Serialize for DryRunProposalRequest {
         if !self.id.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.DryRunProposalRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.DryRunProposalRequest", len)?;
         if !self.id.is_empty() {
             struct_ser.serialize_field("id", &self.id)?;
         }
@@ -1586,7 +1586,7 @@ impl<'de> serde::Deserialize<'de> for DryRunProposalRequest {
             type Value = DryRunProposalRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.DryRunProposalRequest")
+                formatter.write_str("struct krabka.rebalancer.v1.DryRunProposalRequest")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<DryRunProposalRequest, V::Error>
@@ -1609,7 +1609,7 @@ impl<'de> serde::Deserialize<'de> for DryRunProposalRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.DryRunProposalRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.DryRunProposalRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for DryRunResponse {
@@ -1629,7 +1629,7 @@ impl serde::Serialize for DryRunResponse {
         if self.estimated_bytes_moved != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.DryRunResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.DryRunResponse", len)?;
         if !self.id.is_empty() {
             struct_ser.serialize_field("id", &self.id)?;
         }
@@ -1698,7 +1698,7 @@ impl<'de> serde::Deserialize<'de> for DryRunResponse {
             type Value = DryRunResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.DryRunResponse")
+                formatter.write_str("struct krabka.rebalancer.v1.DryRunResponse")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<DryRunResponse, V::Error>
@@ -1739,7 +1739,7 @@ impl<'de> serde::Deserialize<'de> for DryRunResponse {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.DryRunResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.DryRunResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for ExecuteProposalRequest {
@@ -1756,7 +1756,7 @@ impl serde::Serialize for ExecuteProposalRequest {
         if self.throttle_bytes_per_sec.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.ExecuteProposalRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.ExecuteProposalRequest", len)?;
         if !self.id.is_empty() {
             struct_ser.serialize_field("id", &self.id)?;
         }
@@ -1819,7 +1819,7 @@ impl<'de> serde::Deserialize<'de> for ExecuteProposalRequest {
             type Value = ExecuteProposalRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.ExecuteProposalRequest")
+                formatter.write_str("struct krabka.rebalancer.v1.ExecuteProposalRequest")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<ExecuteProposalRequest, V::Error>
@@ -1852,7 +1852,7 @@ impl<'de> serde::Deserialize<'de> for ExecuteProposalRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.ExecuteProposalRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.ExecuteProposalRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for ExecuteProposalResponse {
@@ -1866,7 +1866,7 @@ impl serde::Serialize for ExecuteProposalResponse {
         if self.proposal.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.ExecuteProposalResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.ExecuteProposalResponse", len)?;
         if let Some(v) = self.proposal.as_ref() {
             struct_ser.serialize_field("proposal", v)?;
         }
@@ -1920,7 +1920,7 @@ impl<'de> serde::Deserialize<'de> for ExecuteProposalResponse {
             type Value = ExecuteProposalResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.ExecuteProposalResponse")
+                formatter.write_str("struct krabka.rebalancer.v1.ExecuteProposalResponse")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<ExecuteProposalResponse, V::Error>
@@ -1943,7 +1943,7 @@ impl<'de> serde::Deserialize<'de> for ExecuteProposalResponse {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.ExecuteProposalResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.ExecuteProposalResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GetAnomaliesRequest {
@@ -1960,7 +1960,7 @@ impl serde::Serialize for GetAnomaliesRequest {
         if self.include_resolved.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.GetAnomaliesRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.GetAnomaliesRequest", len)?;
         if self.limit != 0 {
             struct_ser.serialize_field("limit", &self.limit)?;
         }
@@ -2021,7 +2021,7 @@ impl<'de> serde::Deserialize<'de> for GetAnomaliesRequest {
             type Value = GetAnomaliesRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.GetAnomaliesRequest")
+                formatter.write_str("struct krabka.rebalancer.v1.GetAnomaliesRequest")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<GetAnomaliesRequest, V::Error>
@@ -2054,7 +2054,7 @@ impl<'de> serde::Deserialize<'de> for GetAnomaliesRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.GetAnomaliesRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.GetAnomaliesRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GetAnomaliesResponse {
@@ -2068,7 +2068,7 @@ impl serde::Serialize for GetAnomaliesResponse {
         if !self.anomalies.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.GetAnomaliesResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.GetAnomaliesResponse", len)?;
         if !self.anomalies.is_empty() {
             struct_ser.serialize_field("anomalies", &self.anomalies)?;
         }
@@ -2122,7 +2122,7 @@ impl<'de> serde::Deserialize<'de> for GetAnomaliesResponse {
             type Value = GetAnomaliesResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.GetAnomaliesResponse")
+                formatter.write_str("struct krabka.rebalancer.v1.GetAnomaliesResponse")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<GetAnomaliesResponse, V::Error>
@@ -2145,7 +2145,7 @@ impl<'de> serde::Deserialize<'de> for GetAnomaliesResponse {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.GetAnomaliesResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.GetAnomaliesResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GetProposalRequest {
@@ -2159,7 +2159,7 @@ impl serde::Serialize for GetProposalRequest {
         if !self.id.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.GetProposalRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.GetProposalRequest", len)?;
         if !self.id.is_empty() {
             struct_ser.serialize_field("id", &self.id)?;
         }
@@ -2213,7 +2213,7 @@ impl<'de> serde::Deserialize<'de> for GetProposalRequest {
             type Value = GetProposalRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.GetProposalRequest")
+                formatter.write_str("struct krabka.rebalancer.v1.GetProposalRequest")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<GetProposalRequest, V::Error>
@@ -2236,7 +2236,7 @@ impl<'de> serde::Deserialize<'de> for GetProposalRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.GetProposalRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.GetProposalRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GetStateRequest {
@@ -2247,7 +2247,7 @@ impl serde::Serialize for GetStateRequest {
     {
         use serde::ser::SerializeStruct;
         let len = 0;
-        let struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.GetStateRequest", len)?;
+        let struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.GetStateRequest", len)?;
         struct_ser.end()
     }
 }
@@ -2293,7 +2293,7 @@ impl<'de> serde::Deserialize<'de> for GetStateRequest {
             type Value = GetStateRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.GetStateRequest")
+                formatter.write_str("struct krabka.rebalancer.v1.GetStateRequest")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<GetStateRequest, V::Error>
@@ -2307,7 +2307,7 @@ impl<'de> serde::Deserialize<'de> for GetStateRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.GetStateRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.GetStateRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GetStateResponse {
@@ -2330,7 +2330,7 @@ impl serde::Serialize for GetStateResponse {
         if !self.in_flight_reassignments.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.GetStateResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.GetStateResponse", len)?;
         if self.snapshot_at_ms != 0 {
             #[allow(clippy::needless_borrow)]
             #[allow(clippy::needless_borrows_for_generic_args)]
@@ -2406,7 +2406,7 @@ impl<'de> serde::Deserialize<'de> for GetStateResponse {
             type Value = GetStateResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.GetStateResponse")
+                formatter.write_str("struct krabka.rebalancer.v1.GetStateResponse")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<GetStateResponse, V::Error>
@@ -2455,7 +2455,7 @@ impl<'de> serde::Deserialize<'de> for GetStateResponse {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.GetStateResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.GetStateResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for InFlightReassignment {
@@ -2478,7 +2478,7 @@ impl serde::Serialize for InFlightReassignment {
         if !self.removing_replicas.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.InFlightReassignment", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.InFlightReassignment", len)?;
         if !self.topic.is_empty() {
             struct_ser.serialize_field("topic", &self.topic)?;
         }
@@ -2552,7 +2552,7 @@ impl<'de> serde::Deserialize<'de> for InFlightReassignment {
             type Value = InFlightReassignment;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.InFlightReassignment")
+                formatter.write_str("struct krabka.rebalancer.v1.InFlightReassignment")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<InFlightReassignment, V::Error>
@@ -2607,7 +2607,7 @@ impl<'de> serde::Deserialize<'de> for InFlightReassignment {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.InFlightReassignment", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.InFlightReassignment", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for ListProposalsRequest {
@@ -2621,7 +2621,7 @@ impl serde::Serialize for ListProposalsRequest {
         if self.limit != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.ListProposalsRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.ListProposalsRequest", len)?;
         if self.limit != 0 {
             struct_ser.serialize_field("limit", &self.limit)?;
         }
@@ -2675,7 +2675,7 @@ impl<'de> serde::Deserialize<'de> for ListProposalsRequest {
             type Value = ListProposalsRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.ListProposalsRequest")
+                formatter.write_str("struct krabka.rebalancer.v1.ListProposalsRequest")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<ListProposalsRequest, V::Error>
@@ -2700,7 +2700,7 @@ impl<'de> serde::Deserialize<'de> for ListProposalsRequest {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.ListProposalsRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.ListProposalsRequest", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for ListProposalsResponse {
@@ -2714,7 +2714,7 @@ impl serde::Serialize for ListProposalsResponse {
         if !self.proposals.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.ListProposalsResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.ListProposalsResponse", len)?;
         if !self.proposals.is_empty() {
             struct_ser.serialize_field("proposals", &self.proposals)?;
         }
@@ -2768,7 +2768,7 @@ impl<'de> serde::Deserialize<'de> for ListProposalsResponse {
             type Value = ListProposalsResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.ListProposalsResponse")
+                formatter.write_str("struct krabka.rebalancer.v1.ListProposalsResponse")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<ListProposalsResponse, V::Error>
@@ -2791,7 +2791,7 @@ impl<'de> serde::Deserialize<'de> for ListProposalsResponse {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.ListProposalsResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.ListProposalsResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for Movement {
@@ -2820,7 +2820,7 @@ impl serde::Serialize for Movement {
         if self.new_leader != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.Movement", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.Movement", len)?;
         if !self.topic.is_empty() {
             struct_ser.serialize_field("topic", &self.topic)?;
         }
@@ -2908,7 +2908,7 @@ impl<'de> serde::Deserialize<'de> for Movement {
             type Value = Movement;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.Movement")
+                formatter.write_str("struct krabka.rebalancer.v1.Movement")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<Movement, V::Error>
@@ -2983,7 +2983,7 @@ impl<'de> serde::Deserialize<'de> for Movement {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.Movement", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.Movement", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for Partition {
@@ -3006,7 +3006,7 @@ impl serde::Serialize for Partition {
         if !self.isr.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.Partition", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.Partition", len)?;
         if self.partition != 0 {
             struct_ser.serialize_field("partition", &self.partition)?;
         }
@@ -3078,7 +3078,7 @@ impl<'de> serde::Deserialize<'de> for Partition {
             type Value = Partition;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.Partition")
+                formatter.write_str("struct krabka.rebalancer.v1.Partition")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<Partition, V::Error>
@@ -3135,7 +3135,7 @@ impl<'de> serde::Deserialize<'de> for Partition {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.Partition", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.Partition", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for PartitionKey {
@@ -3152,7 +3152,7 @@ impl serde::Serialize for PartitionKey {
         if self.partition != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.PartitionKey", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.PartitionKey", len)?;
         if !self.topic.is_empty() {
             struct_ser.serialize_field("topic", &self.topic)?;
         }
@@ -3212,7 +3212,7 @@ impl<'de> serde::Deserialize<'de> for PartitionKey {
             type Value = PartitionKey;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.PartitionKey")
+                formatter.write_str("struct krabka.rebalancer.v1.PartitionKey")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<PartitionKey, V::Error>
@@ -3245,7 +3245,7 @@ impl<'de> serde::Deserialize<'de> for PartitionKey {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.PartitionKey", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.PartitionKey", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for Proposal {
@@ -3286,7 +3286,7 @@ impl serde::Serialize for Proposal {
         if self.throttle_bytes_per_sec != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.Proposal", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.Proposal", len)?;
         if !self.id.is_empty() {
             struct_ser.serialize_field("id", &self.id)?;
         }
@@ -3410,7 +3410,7 @@ impl<'de> serde::Deserialize<'de> for Proposal {
             type Value = Proposal;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.Proposal")
+                formatter.write_str("struct krabka.rebalancer.v1.Proposal")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<Proposal, V::Error>
@@ -3513,7 +3513,7 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.Proposal", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.Proposal", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for ProposalMode {
@@ -3702,7 +3702,7 @@ impl serde::Serialize for ProposalSummary {
         if self.max_leaders_after != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.ProposalSummary", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.ProposalSummary", len)?;
         if self.replica_movements != 0 {
             struct_ser.serialize_field("replicaMovements", &self.replica_movements)?;
         }
@@ -3792,7 +3792,7 @@ impl<'de> serde::Deserialize<'de> for ProposalSummary {
             type Value = ProposalSummary;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.ProposalSummary")
+                formatter.write_str("struct krabka.rebalancer.v1.ProposalSummary")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProposalSummary, V::Error>
@@ -3867,7 +3867,7 @@ impl<'de> serde::Deserialize<'de> for ProposalSummary {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.ProposalSummary", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.ProposalSummary", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for Topic {
@@ -3884,7 +3884,7 @@ impl serde::Serialize for Topic {
         if !self.partitions.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("crabka.rebalancer.v1.Topic", len)?;
+        let mut struct_ser = serializer.serialize_struct("krabka.rebalancer.v1.Topic", len)?;
         if !self.name.is_empty() {
             struct_ser.serialize_field("name", &self.name)?;
         }
@@ -3944,7 +3944,7 @@ impl<'de> serde::Deserialize<'de> for Topic {
             type Value = Topic;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct crabka.rebalancer.v1.Topic")
+                formatter.write_str("struct krabka.rebalancer.v1.Topic")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<Topic, V::Error>
@@ -3975,6 +3975,6 @@ impl<'de> serde::Deserialize<'de> for Topic {
                 })
             }
         }
-        deserializer.deserialize_struct("crabka.rebalancer.v1.Topic", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("krabka.rebalancer.v1.Topic", FIELDS, GeneratedVisitor)
     }
 }

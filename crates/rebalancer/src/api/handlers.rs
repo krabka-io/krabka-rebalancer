@@ -707,7 +707,7 @@ mod tests {
 
     fn build_app_state(dir: &std::path::Path) -> Arc<AppState> {
         let store = Arc::new(ProposalStore::new(20));
-        let mut registry = prometheus_client::registry::Registry::with_prefix("crabka_rebalancer");
+        let mut registry = prometheus_client::registry::Registry::with_prefix("krabka_rebalancer");
         let metrics = RebalancerMetrics::register(&mut registry);
         let executor = ExecutorState {
             store: store.clone(),

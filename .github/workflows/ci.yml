@@ -52,7 +52,7 @@ jobs:
       - run: cargo test --workspace --lib --bins
       - name: generated Connect API is current
         run: |
-          generated="$(find target/debug/build -path '*/out/crabka.rebalancer.v1.rs' -print -quit)"
+          generated="$(find target/debug/build -path '*/out/krabka.rebalancer.v1.rs' -print -quit)"
           test -n "${generated}"
           cmp "${generated}" crates/rebalancer/src/pb.rs
 

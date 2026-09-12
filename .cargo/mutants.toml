@@ -19,7 +19,7 @@ minimum_test_timeout = 120
 
 exclude_globs = [
     # The deterministic KRaft scenario simulator. It is library code behind the
-    # `scenarios` feature, but its consumer is documentation: `crabka-docgen`
+    # `scenarios` feature, but its consumer is documentation: `krabka-docgen`
     # runs the scenarios in process and renders the recorded traces into the
     # Mermaid diagrams. The algorithm it exercises is the same scheduler
     # `crates/raft/tests/sim_harness` drives, and that is where the consensus

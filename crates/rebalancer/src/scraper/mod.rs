@@ -361,7 +361,7 @@ mod tests {
 
     #[tokio::test]
     async fn tick_once_inserts_samples_only_on_success_status() {
-        let metric_body = "crabka_broker_partition_disk_bytes{topic=\"t\",partition=\"0\"} 42\n";
+        let metric_body = "krabka_broker_partition_disk_bytes{topic=\"t\",partition=\"0\"} 42\n";
 
         let failed_addr = one_response_server("500 Internal Server Error", metric_body).await;
         let failed_store = Arc::new(UsageStore::new(WindowConfig {

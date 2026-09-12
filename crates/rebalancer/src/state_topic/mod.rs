@@ -1,5 +1,5 @@
 //! Rebalancer state persistence through an internal compacted topic on the
-//! managed Crabka cluster. It replaces the file-backed
+//! managed Krabka cluster. It replaces the file-backed
 //! `{data_dir}/in_flight.json` store. The state survives a pod restart, which
 //! is a prerequisite for multi-replica HA.
 

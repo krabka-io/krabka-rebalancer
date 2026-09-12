@@ -242,7 +242,7 @@ mod tests {
 
     #[test]
     fn fetch_request_targets_state_topic_partition_with_consumer_limits() {
-        let req = fetch_request("__crabka_state", 123);
+        let req = fetch_request("__krabka_state", 123);
         assert2::assert!(
             req == FetchRequest {
                 replica_id: -1,
@@ -253,7 +253,7 @@ mod tests {
                 session_id: 0,
                 session_epoch: -1,
                 topics: vec![FetchTopic {
-                    topic: "__crabka_state".into(),
+                    topic: "__krabka_state".into(),
                     topic_id: Uuid([0; 16]),
                     partitions: vec![FetchPartition {
                         partition: 0,
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn fetch_request_uses_custom_maximum() {
-        let request = fetch_request_with_max("__crabka_state", 0, crabka_units::kibibytes(32));
+        let request = fetch_request_with_max("__krabka_state", 0, crabka_units::kibibytes(32));
         assert2::assert!(request.max_bytes == 32 * 1024);
         assert2::assert!(request.topics[0].partitions[0].partition_max_bytes == 32 * 1024);
     }
@@ -406,7 +406,7 @@ mod tests {
         );
         let loader = StateTopicLoader {
             client,
-            topic: "__crabka_state".into(),
+            topic: "__krabka_state".into(),
             state: LoadedState::new(),
             shutdown: CancellationToken::new(),
             runtime_policy: RebalancerRuntimePolicy::default(),

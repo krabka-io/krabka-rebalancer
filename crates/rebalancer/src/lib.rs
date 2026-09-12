@@ -1,4 +1,4 @@
-//! Crabka rebalancer: a Cruise-Control-equivalent partition placement
+//! Krabka rebalancer: a Cruise-Control-equivalent partition placement
 //! advisor and executor.
 //!
 //! The crate ingests broker/topic metrics, builds a cluster model, evaluates
@@ -11,7 +11,7 @@
 //! ```no_run
 //! use std::sync::Arc;
 //!
-//! use crabka_rebalancer::{
+//! use krabka_rebalancer::{
 //!     capacity::BrokerCapacities,
 //!     goals::{GoalContext, leader_distribution::LeaderDistribution},
 //!     model::{BrokerView, ClusterState, PartitionView},
