@@ -8,6 +8,13 @@ use crabka_client_core::{
     ClientFrameMax, ConnectionDispatchQueueCapacity, ConnectionOptions,
     DEFAULT_CONNECTION_DISPATCH_QUEUE_CAPACITY,
 };
+use crabka_units::{
+    ByteRate, ByteSize, Ratio, Time,
+    convert::{ByteRateExt as _, StdDurationExt as _, TimeExt as _},
+    fraction, parse, percent,
+};
+#[cfg(test)]
+use crabka_units::{millis, secs};
 use krabka_rebalancer::{
     api::{GoalRegistry, handlers::AppState},
     config::{PositiveUsize, RebalancerRuntimePolicy},
@@ -22,13 +29,6 @@ use krabka_rebalancer::{
     metrics::RebalancerMetrics,
     model::{proposal::ProposalStatus, store::ProposalStore},
 };
-use crabka_units::{
-    ByteRate, ByteSize, Ratio, Time,
-    convert::{ByteRateExt as _, StdDurationExt as _, TimeExt as _},
-    fraction, parse, percent,
-};
-#[cfg(test)]
-use crabka_units::{millis, secs};
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
