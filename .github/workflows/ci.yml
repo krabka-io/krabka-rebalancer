@@ -76,8 +76,8 @@ jobs:
         with:
           version: v4.2.4
       - run: helm plugin install https://github.com/helm-unittest/helm-unittest --version v0.6.0 --verify=false
-      - run: helm lint charts/crabka-rebalancer --set bootstrapServers=localhost:9092
-      - run: helm unittest charts/crabka-rebalancer
+      - run: helm lint charts/krabka-rebalancer --set bootstrapServers=localhost:9092
+      - run: helm unittest charts/krabka-rebalancer
 
   container:
     name: container

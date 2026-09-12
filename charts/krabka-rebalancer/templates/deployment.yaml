@@ -22,7 +22,7 @@ spec:
       serviceAccountName: {{ include "rebalancer.fullname" . }}
       securityContext: {{- toYaml .Values.securityContext | nindent 8 }}
       containers:
-        - name: crabka-rebalancer
+        - name: krabka-rebalancer
           image: {{ include "rebalancer.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
@@ -32,7 +32,7 @@ spec:
               value: {{ .Values.listenAddr | quote }}
             {{- if .Values.brokerEvacuationAuth.existingSecret }}
             - name: CRABKA_REBALANCER_BROKER_EVACUATION_TOKEN_FILE
-              value: /var/run/secrets/crabka-rebalancer/broker-evacuation-token
+              value: /var/run/secrets/krabka-rebalancer/broker-evacuation-token
             {{- end }}
             - name: CRABKA_SCRAPE_INTERVAL_SECS
               value: {{ .Values.scrapeIntervalSecs | quote }}
@@ -91,7 +91,7 @@ spec:
               value: {{ .Values.brokerCapacityFile | quote }}
             {{- else if .Values.brokerCapacities }}
             - name: CRABKA_BROKER_CAPACITY_FILE
-              value: /etc/crabka-rebalancer/capacity.yaml
+              value: /etc/krabka-rebalancer/capacity.yaml
             {{- end }}
             {{- if .Values.metricsScrapeTargets }}
             - name: CRABKA_METRICS_SCRAPE_TARGETS
@@ -122,7 +122,7 @@ spec:
             - name: CRABKA_ANOMALY_RING_BUFFER_SIZE
               value: {{ .Values.anomalyRingBufferSize | quote }}
             - name: CRABKA_DATA_DIR
-              value: /var/lib/crabka-rebalancer
+              value: /var/lib/krabka-rebalancer
           ports:
             - name: connect-rpc
               containerPort: 9300
@@ -141,15 +141,15 @@ spec:
             periodSeconds: 5
           volumeMounts:
             - name: data
-              mountPath: /var/lib/crabka-rebalancer
+              mountPath: /var/lib/krabka-rebalancer
             {{- if .Values.brokerEvacuationAuth.existingSecret }}
             - name: broker-evacuation-auth
-              mountPath: /var/run/secrets/crabka-rebalancer
+              mountPath: /var/run/secrets/krabka-rebalancer
               readOnly: true
             {{- end }}
             {{- if and .Values.brokerCapacities (not .Values.brokerCapacityFile) }}
             - name: capacity-config
-              mountPath: /etc/crabka-rebalancer
+              mountPath: /etc/krabka-rebalancer
               readOnly: true
             {{- end }}
           resources:

@@ -25,7 +25,7 @@ tests:
           value: ConfigMap
       - equal:
           path: metadata.name
-          value: demo-crabka-rebalancer-capacity
+          value: demo-krabka-rebalancer-capacity
       - matchRegex:
           path: data["capacity.yaml"]
           pattern: 'version:\s*1'
