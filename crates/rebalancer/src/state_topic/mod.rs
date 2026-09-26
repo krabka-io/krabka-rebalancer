@@ -60,6 +60,12 @@ impl LoadedState {
     pub(crate) fn mark_loaded(&self) {
         self.is_loaded.store(true, Ordering::Release);
     }
+
+    /// Forget the replayed state and wait for a fresh replay.
+    pub(crate) fn restart(&self) {
+        self.is_loaded.store(false, Ordering::Release);
+        self.store(None);
+    }
 }
 
 /// The fixed key under which the executor publishes its state. The topic holds

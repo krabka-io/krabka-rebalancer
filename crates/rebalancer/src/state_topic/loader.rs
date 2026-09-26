@@ -53,6 +53,7 @@ impl StateTopicLoader {
         let mut next_offset: i64 = 0;
         let mut quiet_polls: usize = 0;
         let mut route: Option<TopicRoute> = None;
+        let mut replayed_id: Option<Uuid> = None;
         loop {
             tokio::select! {
                 () = tokio::time::sleep(self.runtime_policy.state_loader_poll_interval.to_std()) => {}
@@ -64,7 +65,19 @@ impl StateTopicLoader {
             let current = match route {
                 Some(current) => current,
                 None => match resolve_topic_route(&self.client, &self.topic).await {
-                    Ok(Some(resolved)) => *route.insert(resolved),
+                    Ok(Some(resolved)) => {
+                        // A new id means the topic was deleted and recreated:
+                        // the old offsets and the state replayed from them
+                        // describe a log that no longer exists.
+                        if replayed_id.is_some_and(|id| id != resolved.topic_id) {
+                            info!(topic = %self.topic, "state topic was recreated; replaying it from the start");
+                            next_offset = 0;
+                            quiet_polls = 0;
+                            self.state.restart();
+                        }
+                        replayed_id = Some(resolved.topic_id);
+                        *route.insert(resolved)
+                    }
                     Ok(None) => {
                         debug!(topic = %self.topic, "metadata has no state-topic id or leader yet; will retry");
                         continue;
@@ -234,6 +247,8 @@ fn fetched_records_from_response(
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::{AtomicBool, Ordering};
+
     use bytes::Bytes;
     use crabka_protocol::{
         UnknownTaggedFields,
@@ -605,5 +620,74 @@ mod tests {
         let mut ids = fetch_ids(&broker);
         ids.dedup();
         assert2::assert!(ids == [old_id, new_id]);
+    }
+
+    #[tokio::test]
+    async fn loader_replays_a_recreated_topic_from_the_start() {
+        let old_id = Uuid([1; 16]);
+        let new_id = Uuid([2; 16]);
+        let value = serde_format::encode(&in_flight("p-1")).unwrap();
+        let recreated = Arc::new(AtomicBool::new(false));
+        let broker = TestBroker::start(
+            STATE_TOPIC,
+            old_id,
+            Box::new({
+                let recreated = Arc::clone(&recreated);
+                move |seen| {
+                    let Seen::Fetch(_, request) = seen else {
+                        panic!("loader only fetches");
+                    };
+                    let fetch = &request.topics[0];
+                    // The old topic holds one record; the recreated one is empty,
+                    // and the old id stops resolving once it exists.
+                    if fetch.topic_id == new_id {
+                        return Answer::Fetch(fetch_response(0, None));
+                    }
+                    if recreated.load(Ordering::Acquire) {
+                        return Answer::Fetch(fetch_response(UNKNOWN_TOPIC_ID, None));
+                    }
+                    let records = (fetch.partitions[0].fetch_offset == 0).then(|| {
+                        RecordsPayload::V2(vec![RecordBatch {
+                            records: vec![Record {
+                                key: Some(Bytes::from_static(STATE_KEY.as_bytes())),
+                                value: Some(value.clone()),
+                                ..Default::default()
+                            }],
+                            ..Default::default()
+                        }])
+                    });
+                    Answer::Fetch(fetch_response(0, records))
+                }
+            }),
+        )
+        .await;
+
+        let (state, shutdown) = spawn_loader(&broker);
+        wait_until("the old topic to load", || state.is_loaded()).await;
+        assert2::assert!(state.current().is_some_and(|f| f.proposal_id == "p-1"));
+
+        *broker.topic_id.lock().unwrap() = new_id;
+        recreated.store(true, Ordering::Release);
+        wait_until("the recreated topic to load", || {
+            state.is_loaded() && state.current().is_none()
+        })
+        .await;
+        shutdown.cancel();
+
+        let first_new = broker
+            .seen
+            .lock()
+            .unwrap()
+            .iter()
+            .find_map(|seen| match seen {
+                Seen::Fetch(_, request) if request.topics[0].topic_id == new_id => {
+                    Some(request.clone())
+                }
+                _ => None,
+            })
+            .unwrap();
+        let mut expected = fetch_request(STATE_TOPIC, new_id, 0);
+        expected.topics[0].topic = String::new();
+        assert2::assert!(first_new == expected);
     }
 }
