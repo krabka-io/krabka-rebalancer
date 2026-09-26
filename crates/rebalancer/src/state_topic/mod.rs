@@ -6,7 +6,10 @@
 mod error;
 pub mod loader;
 pub(crate) mod producer;
+mod route;
 pub(crate) mod serde_format;
+#[cfg(test)]
+mod test_broker;
 pub mod topic_admin;
 
 use std::sync::{

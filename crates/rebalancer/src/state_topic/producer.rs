@@ -7,7 +7,6 @@ use bytes::Bytes;
 use crabka_client_core::Client;
 use crabka_protocol::{
     owned::{
-        metadata_response::MetadataResponse,
         produce_request::{PartitionProduceData, ProduceRequest, TopicProduceData},
         produce_response::ProduceResponse,
     },
@@ -19,7 +18,10 @@ use tracing::debug;
 
 use crate::{
     config::RebalancerRuntimePolicy,
-    state_topic::error::{StateTopicError, is_transient_topic_partition_code},
+    state_topic::{
+        error::{StateTopicError, is_transient_topic_partition_code},
+        route::{TopicRoute, resolve_topic_route},
+    },
 };
 
 /// Produce a single record to `(topic, partition=0)`. `value=None` is a
@@ -41,7 +43,10 @@ pub(crate) async fn produce_state(
         // Resolve it via Metadata on each attempt — also nudges the
         // broker to load the topic into its data plane if it hasn't
         // yet, which addresses the post-create transient window.
-        let (topic_id, leader_id) = match resolve_topic_route(client, topic).await {
+        let TopicRoute {
+            topic_id,
+            leader_id,
+        } = match resolve_topic_route(client, topic).await {
             Ok(Some(route)) => route,
             Ok(None) => {
                 last_transient = Some(3);
@@ -81,31 +86,6 @@ pub(crate) async fn produce_state(
     Err(StateTopicError::ProduceErrorCode {
         code: last_transient.unwrap_or(0),
     })
-}
-
-/// Resolve a topic's UUID through Metadata. Returns `Ok(None)` when the
-/// metadata response has no entry for the topic. The topic then exists in the
-/// controller's metadata image but has not propagated to the broker on the
-/// other end of this connection. Treat that case as transient and retry.
-async fn resolve_topic_route(
-    client: &Client,
-    topic: &str,
-) -> Result<Option<(Uuid, i32)>, StateTopicError> {
-    let resp = client.refresh_metadata().await?;
-    Ok(topic_route_from_metadata(&resp, topic))
-}
-
-fn topic_route_from_metadata(resp: &MetadataResponse, topic: &str) -> Option<(Uuid, i32)> {
-    let topic = resp
-        .topics
-        .iter()
-        .find(|t| t.name.as_deref() == Some(topic))
-        .filter(|t| t.topic_id != Uuid::default())?;
-    let partition = topic
-        .partitions
-        .iter()
-        .find(|partition| partition.partition_index == 0 && partition.leader_id >= 0)?;
-    Some((topic.topic_id, partition.leader_id))
 }
 
 async fn send_once(
@@ -169,13 +149,20 @@ fn produce_response_error(resp: &ProduceResponse) -> Option<i16> {
     None
 }
 
+/// Kafka's `UNKNOWN_TOPIC_ID` error code. Produce v13+ answers it when the
+/// request's topic id does not resolve: the topic was recreated under a new
+/// id, or the leader has not yet applied the topic. The Java client treats it
+/// as retriable metadata staleness, and `produce_state` resolves the id again
+/// on every attempt.
+const UNKNOWN_TOPIC_ID: i16 = 100;
+
 fn classify_send_result(
     result: Result<(), StateTopicError>,
 ) -> Result<Option<i16>, StateTopicError> {
     match result {
         Ok(()) => Ok(None),
         Err(StateTopicError::ProduceErrorCode { code })
-            if is_transient_topic_partition_code(code) =>
+            if code == UNKNOWN_TOPIC_ID || is_transient_topic_partition_code(code) =>
         {
             Ok(Some(code))
         }
@@ -185,19 +172,19 @@ fn classify_send_result(
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use assert2::check;
     use crabka_protocol::{
-        owned::{
-            metadata_response::{
-                MetadataResponse, MetadataResponsePartition, MetadataResponseTopic,
-            },
-            produce_response::{PartitionProduceResponse, ProduceResponse, TopicProduceResponse},
+        owned::produce_response::{
+            PartitionProduceResponse, ProduceResponse, TopicProduceResponse,
         },
         records::RecordsPayload,
     };
     use crabka_units::{Time, millis, secs};
 
     use super::*;
+    use crate::state_topic::test_broker::{Answer, Seen, TestBroker};
 
     /// Connect and request timeout for the deliberately unreachable test
     /// client.
@@ -274,69 +261,14 @@ mod tests {
     }
 
     #[test]
-    fn topic_route_from_metadata_requires_partition_zero_leader() {
-        let wanted = Uuid([7; 16]);
-        let resp = MetadataResponse {
-            topics: vec![
-                MetadataResponseTopic {
-                    name: Some("other-topic".into()),
-                    topic_id: Uuid([9; 16]),
-                    partitions: vec![MetadataResponsePartition {
-                        partition_index: 0,
-                        leader_id: 4,
-                        ..Default::default()
-                    }],
-                    ..Default::default()
-                },
-                MetadataResponseTopic {
-                    name: Some("state-topic".into()),
-                    topic_id: wanted,
-                    partitions: vec![MetadataResponsePartition {
-                        partition_index: 0,
-                        leader_id: 7,
-                        ..Default::default()
-                    }],
-                    ..Default::default()
-                },
-            ],
-            ..Default::default()
-        };
-
-        for (topic, want) in [
-            ("state-topic", Some((wanted, 7))),
-            ("other-topic", Some((Uuid([9; 16]), 4))),
-            ("missing", None),
-        ] {
-            assert2::assert!(topic_route_from_metadata(&resp, topic) == want);
-        }
-    }
-
-    #[test]
-    fn topic_id_from_metadata_treats_zero_uuid_as_missing() {
-        let resp = MetadataResponse {
-            topics: vec![MetadataResponseTopic {
-                name: Some("state-topic".into()),
-                topic_id: Uuid::default(),
-                partitions: vec![MetadataResponsePartition {
-                    partition_index: 0,
-                    leader_id: 7,
-                    ..Default::default()
-                }],
-                ..Default::default()
-            }],
-            ..Default::default()
-        };
-
-        assert2::assert!(topic_route_from_metadata(&resp, "state-topic").is_none());
-    }
-
-    #[test]
     fn produce_response_errors_are_classified_for_retry() {
         check!(classify_send_result(Ok(())).unwrap().is_none());
-        check!(
-            classify_send_result(Err(StateTopicError::ProduceErrorCode { code: 5 })).unwrap()
-                == Some(5)
-        );
+        for code in [3, 5, 9, UNKNOWN_TOPIC_ID] {
+            check!(
+                classify_send_result(Err(StateTopicError::ProduceErrorCode { code })).unwrap()
+                    == Some(code)
+            );
+        }
         let err =
             classify_send_result(Err(StateTopicError::ProduceErrorCode { code: 42 })).unwrap_err();
         assert2::assert!(matches!(
@@ -373,17 +305,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn resolve_topic_route_propagates_metadata_send_errors() {
-        let client = unreachable_client("resolve-topic-id").await;
-
-        assert2::assert!(
-            resolve_topic_route(&client, "__krabka_state")
-                .await
-                .is_err()
-        );
-    }
-
-    #[tokio::test]
     async fn send_once_propagates_produce_send_errors() {
         let client = unreachable_client("send-once").await;
         let key = Bytes::from_static(b"in_flight");
@@ -401,5 +322,65 @@ mod tests {
             .await
             .is_err()
         );
+    }
+
+    #[tokio::test]
+    async fn produce_state_retries_unknown_topic_id_with_the_resolved_id() {
+        let old_id = Uuid([1; 16]);
+        let new_id = Uuid([2; 16]);
+        let broker = TestBroker::start(
+            "__krabka_state",
+            old_id,
+            Box::new(move |seen| {
+                let Seen::Produce(_, request) = seen else {
+                    panic!("producer only produces");
+                };
+                let error_code = if request.topic_data[0].topic_id == new_id {
+                    0
+                } else {
+                    UNKNOWN_TOPIC_ID
+                };
+                Answer::Produce(response_with_error(error_code))
+            }),
+        )
+        .await;
+        let policy = RebalancerRuntimePolicy {
+            state_produce_retry_backoff: millis(1),
+            ..Default::default()
+        };
+        let key = Bytes::from_static(b"in_flight");
+        let value = Some(Bytes::from_static(b"{}"));
+
+        // The first attempt names the topic by the id it had before it was
+        // recreated; the retry resolves the current one.
+        let topic_id = Arc::clone(&broker.topic_id);
+        let seen = Arc::clone(&broker.seen);
+        tokio::spawn(async move {
+            while seen.lock().unwrap().is_empty() {
+                tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+            }
+            *topic_id.lock().unwrap() = new_id;
+        });
+        produce_state(
+            &broker.client,
+            "__krabka_state",
+            "in_flight",
+            value.clone(),
+            &policy,
+        )
+        .await
+        .expect("produce succeeds once the id resolves");
+
+        // Produce v13 carries the topic id and no name, so the decoded name
+        // is empty.
+        let wire = |topic_id| {
+            let mut request =
+                produce_request("__krabka_state", topic_id, &key, value.clone(), secs(10));
+            request.topic_data[0].name = String::new();
+            Seen::Produce(13, request)
+        };
+        let seen = broker.seen.lock().unwrap().clone();
+        assert2::assert!(seen.first() == Some(&wire(old_id)));
+        assert2::assert!(seen.last() == Some(&wire(new_id)));
     }
 }

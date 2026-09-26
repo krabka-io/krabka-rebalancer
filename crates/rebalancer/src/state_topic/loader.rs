@@ -11,6 +11,7 @@ use crabka_protocol::{
         fetch_request::{FetchPartition, FetchRequest, FetchTopic},
         fetch_response::FetchResponse,
     },
+    primitives::uuid::Uuid,
     records::RecordsPayload,
 };
 use crabka_units::{
@@ -25,6 +26,7 @@ use crate::{
     state_topic::{
         LoadedState, STATE_KEY,
         error::{StateTopicError, is_transient_topic_partition_code},
+        route::{TopicRoute, resolve_topic_route},
         serde_format,
     },
 };
@@ -50,6 +52,7 @@ impl StateTopicLoader {
         info!(topic = %self.topic, "state-topic loader started");
         let mut next_offset: i64 = 0;
         let mut quiet_polls: usize = 0;
+        let mut route: Option<TopicRoute> = None;
         loop {
             tokio::select! {
                 () = tokio::time::sleep(self.runtime_policy.state_loader_poll_interval.to_std()) => {}
@@ -58,7 +61,21 @@ impl StateTopicLoader {
                     return;
                 }
             }
-            match self.poll_once(next_offset).await {
+            let current = match route {
+                Some(current) => current,
+                None => match resolve_topic_route(&self.client, &self.topic).await {
+                    Ok(Some(resolved)) => *route.insert(resolved),
+                    Ok(None) => {
+                        debug!(topic = %self.topic, "metadata has no state-topic id or leader yet; will retry");
+                        continue;
+                    }
+                    Err(e) => {
+                        debug!(error = %e, "state-topic metadata failed; will retry");
+                        continue;
+                    }
+                },
+            };
+            match self.poll_once(current, next_offset).await {
                 Ok(records) => {
                     let saw_new = apply_fetched_records(&self.state, &mut next_offset, records);
                     if saw_new {
@@ -76,40 +93,63 @@ impl StateTopicLoader {
                     }
                 }
                 Err(e) => {
-                    debug!(error = %e, "state-topic poll failed; will retry");
-                    // Do NOT advance offset; do NOT count as quiet.
+                    debug!(error = %e, "state-topic poll failed; will re-resolve the route and retry");
+                    // Do NOT advance offset; do NOT count as quiet. The
+                    // failure may mean the topic was recreated under a new
+                    // id (UNKNOWN_TOPIC_ID) or its leader moved
+                    // (NOT_LEADER_OR_FOLLOWER), so resolve both again.
+                    route = None;
                 }
             }
         }
     }
 
-    async fn poll_once(&self, fetch_offset: i64) -> Result<Vec<FetchedRecord>, StateTopicError> {
+    async fn poll_once(
+        &self,
+        route: TopicRoute,
+        fetch_offset: i64,
+    ) -> Result<Vec<FetchedRecord>, StateTopicError> {
         let req = fetch_request_with_max(
             &self.topic,
+            route.topic_id,
             fetch_offset,
             self.runtime_policy.state_fetch_max,
         );
-        let resp = self.client.send(req).await?;
+        let resp = self.client.broker(route.leader_id).send(req).await?;
         fetched_records_from_response(&resp)
     }
 }
 
 #[cfg(test)]
-fn fetch_request(topic: &str, fetch_offset: i64) -> FetchRequest {
+fn fetch_request(topic: &str, topic_id: Uuid, fetch_offset: i64) -> FetchRequest {
     fetch_request_with_max(
         topic,
+        topic_id,
         fetch_offset,
         RebalancerRuntimePolicy::default().state_fetch_max,
     )
 }
 
-fn fetch_request_with_max(topic: &str, fetch_offset: i64, fetch_max: ByteSize) -> FetchRequest {
+/// Build the loader's Fetch for partition 0 of the state topic.
+///
+/// The request names the topic twice because Kafka's Fetch schema does:
+/// v0-v12 carry only `topic`, and v13+ (KIP-516) carry only `topic_id`.
+/// `KafkaApis.handleFetchRequest` resolves a v13+ id through the metadata
+/// cache and answers `UNKNOWN_TOPIC_ID` for every partition of an id it
+/// cannot resolve, so the id must be the topic's real one.
+fn fetch_request_with_max(
+    topic: &str,
+    topic_id: Uuid,
+    fetch_offset: i64,
+    fetch_max: ByteSize,
+) -> FetchRequest {
     FetchRequest {
         max_wait_ms: NO_FETCH_WAIT.millis_i32(),
         min_bytes: NO_MIN_BYTES.bytes_i32(),
         max_bytes: fetch_max.bytes_i32(),
         topics: vec![FetchTopic {
             topic: topic.to_string(),
+            topic_id,
             partitions: vec![FetchPartition {
                 partition: 0,
                 fetch_offset,
@@ -207,7 +247,10 @@ mod tests {
     use crabka_units::millis;
 
     use super::*;
-    use crate::executor::state::{InFlightFile, Phase};
+    use crate::{
+        executor::state::{InFlightFile, Phase},
+        state_topic::test_broker::{Answer, Seen, TestBroker},
+    };
 
     /// Connect and request timeout for the deliberately unreachable test
     /// client.
@@ -242,7 +285,7 @@ mod tests {
 
     #[test]
     fn fetch_request_targets_state_topic_partition_with_consumer_limits() {
-        let req = fetch_request("__krabka_state", 123);
+        let req = fetch_request("__krabka_state", Uuid([7; 16]), 123);
         assert2::assert!(
             req == FetchRequest {
                 replica_id: -1,
@@ -254,7 +297,7 @@ mod tests {
                 session_epoch: -1,
                 topics: vec![FetchTopic {
                     topic: "__krabka_state".into(),
-                    topic_id: Uuid([0; 16]),
+                    topic_id: Uuid([7; 16]),
                     partitions: vec![FetchPartition {
                         partition: 0,
                         current_leader_epoch: -1,
@@ -283,7 +326,12 @@ mod tests {
 
     #[test]
     fn fetch_request_uses_custom_maximum() {
-        let request = fetch_request_with_max("__krabka_state", 0, crabka_units::kibibytes(32));
+        let request = fetch_request_with_max(
+            "__krabka_state",
+            Uuid([7; 16]),
+            0,
+            crabka_units::kibibytes(32),
+        );
         assert2::assert!(request.max_bytes == 32 * 1024);
         assert2::assert!(request.topics[0].partitions[0].partition_max_bytes == 32 * 1024);
     }
@@ -412,6 +460,150 @@ mod tests {
             runtime_policy: RebalancerRuntimePolicy::default(),
         };
 
-        assert2::assert!(loader.poll_once(0).await.is_err());
+        let route = TopicRoute {
+            topic_id: Uuid([7; 16]),
+            leader_id: 1,
+        };
+
+        assert2::assert!(loader.poll_once(route, 0).await.is_err());
+    }
+
+    /// Kafka's `UNKNOWN_TOPIC_ID` error code.
+    const UNKNOWN_TOPIC_ID: i16 = 100;
+    const STATE_TOPIC: &str = "__krabka_state";
+    /// How long a loader under test may take to mark the state loaded.
+    const LOAD_DEADLINE: std::time::Duration = std::time::Duration::from_secs(10);
+
+    fn fast_policy() -> RebalancerRuntimePolicy {
+        RebalancerRuntimePolicy {
+            state_loader_poll_interval: millis(1),
+            ..Default::default()
+        }
+    }
+
+    fn fetch_ids(broker: &TestBroker) -> Vec<Uuid> {
+        broker
+            .seen
+            .lock()
+            .unwrap()
+            .iter()
+            .filter_map(|seen| match seen {
+                Seen::Fetch(_, request) => Some(request.topics[0].topic_id),
+                Seen::Produce(..) => None,
+            })
+            .collect()
+    }
+
+    fn spawn_loader(broker: &TestBroker) -> (Arc<LoadedState>, CancellationToken) {
+        let state = LoadedState::new();
+        let shutdown = CancellationToken::new();
+        tokio::spawn(
+            StateTopicLoader {
+                client: Arc::clone(&broker.client),
+                topic: STATE_TOPIC.into(),
+                state: Arc::clone(&state),
+                shutdown: shutdown.clone(),
+                runtime_policy: fast_policy(),
+            }
+            .run(),
+        );
+        (state, shutdown)
+    }
+
+    async fn wait_until(what: &str, mut done: impl FnMut() -> bool) {
+        tokio::time::timeout(LOAD_DEADLINE, async {
+            while !done() {
+                tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+            }
+        })
+        .await
+        .unwrap_or_else(|_| panic!("timed out waiting for {what}"));
+    }
+
+    #[tokio::test]
+    async fn loader_fetches_by_topic_id_at_the_negotiated_version() {
+        let topic_id = Uuid([7; 16]);
+        let value = serde_format::encode(&in_flight("p-1")).unwrap();
+        let broker = TestBroker::start(
+            STATE_TOPIC,
+            topic_id,
+            Box::new(move |seen| {
+                let Seen::Fetch(_, request) = seen else {
+                    panic!("loader only fetches");
+                };
+                // `KafkaApis.handleFetchRequest` refuses an id that does not
+                // resolve, and the zero id never does.
+                if request.topics[0].topic_id != topic_id {
+                    return Answer::Fetch(fetch_response(UNKNOWN_TOPIC_ID, None));
+                }
+                let records = (request.topics[0].partitions[0].fetch_offset == 0).then(|| {
+                    RecordsPayload::V2(vec![RecordBatch {
+                        records: vec![Record {
+                            key: Some(Bytes::from_static(STATE_KEY.as_bytes())),
+                            value: Some(value.clone()),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }])
+                });
+                Answer::Fetch(fetch_response(0, records))
+            }),
+        )
+        .await;
+
+        let (state, shutdown) = spawn_loader(&broker);
+        wait_until("the state to load", || state.is_loaded()).await;
+        shutdown.cancel();
+
+        // Fetch v18 carries the topic id and no name, so the decoded name is
+        // empty.
+        let wire_topic = |fetch_offset| {
+            let mut request = fetch_request(STATE_TOPIC, topic_id, fetch_offset);
+            request.topics[0].topic = String::new();
+            request
+        };
+        let seen = broker.seen.lock().unwrap().clone();
+        assert2::assert!(
+            seen[..2]
+                == [
+                    Seen::Fetch(18, wire_topic(0)),
+                    Seen::Fetch(18, wire_topic(1))
+                ]
+        );
+        assert2::assert!(state.current().is_some_and(|f| f.proposal_id == "p-1"));
+    }
+
+    #[tokio::test]
+    async fn loader_resolves_the_topic_id_again_after_unknown_topic_id() {
+        let old_id = Uuid([1; 16]);
+        let new_id = Uuid([2; 16]);
+        let broker = TestBroker::start(
+            STATE_TOPIC,
+            old_id,
+            Box::new(move |seen| {
+                let Seen::Fetch(_, request) = seen else {
+                    panic!("loader only fetches");
+                };
+                // Only the recreated topic's id resolves.
+                let code = if request.topics[0].topic_id == new_id {
+                    0
+                } else {
+                    UNKNOWN_TOPIC_ID
+                };
+                Answer::Fetch(fetch_response(code, None))
+            }),
+        )
+        .await;
+
+        let (state, shutdown) = spawn_loader(&broker);
+        wait_until("a fetch by the stale id", || !fetch_ids(&broker).is_empty()).await;
+        assert2::assert!(!state.is_loaded());
+        *broker.topic_id.lock().unwrap() = new_id;
+        wait_until("the state to load", || state.is_loaded()).await;
+        shutdown.cancel();
+
+        let mut ids = fetch_ids(&broker);
+        ids.dedup();
+        assert2::assert!(ids == [old_id, new_id]);
     }
 }
