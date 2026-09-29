@@ -3,10 +3,12 @@ name: krabka-rebalancer
 description: Cruise-Control-equivalent partition rebalancer for Krabka clusters.
 type: application
 version: 0.2.0
-# appVersion tracks the crate release. It is the local default. The release job
-# overrides both version and appVersion from the workspace Cargo.toml when it
-# packages the chart, so you do not edit this by hand on release.
-appVersion: "0.3.6"
+# appVersion tracks the crate release, and it is the default image tag. The
+# aggregated chart repository overrides both version and appVersion from the
+# workspace Cargo.toml when it packages the chart. A checkout installed straight
+# from this directory uses the value below, so release.yml refuses a tag whose
+# version differs from it.
+appVersion: "0.4.0"
 home: https://github.com/krabka-io/krabka-rebalancer
 sources:
   - https://github.com/krabka-io/krabka-rebalancer

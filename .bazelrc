@@ -7,3 +7,10 @@ test --test_output=errors
 build:lint --aspects=//tools/lint:linters.bzl%clippy
 build:lint --output_groups=rules_lint_report
 test --@aspect_rules_lint//lint:fail_on_violation
+
+# The image test starts a container, so it needs a Docker daemon. `bazel test
+# //...` on a machine without one skips it.
+#
+#     bazel test -c opt --config=docker //packaging:image_docker_test
+test --test_tag_filters=-docker
+test:docker --test_tag_filters=docker
