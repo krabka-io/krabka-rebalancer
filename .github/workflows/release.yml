@@ -42,6 +42,18 @@ jobs:
             exit 1
           fi
 
+      # The chart in this directory defaults `image.tag` to its appVersion. A
+      # release whose version differs would leave that default pointing at an
+      # image that no release publishes.
+      - name: the chart appVersion matches the release
+        run: |
+          version="$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)"
+          app_version="$(sed -n 's/^appVersion: "\(.*\)"$/\1/p' charts/krabka-rebalancer/Chart.yaml)"
+          if [ "v${app_version}" != "${GITHUB_REF_NAME}" ] || [ "${version}" != "${app_version}" ]; then
+            echo "charts/krabka-rebalancer/Chart.yaml has appVersion ${app_version}; ${GITHUB_REF_NAME} needs ${version}." >&2
+            exit 1
+          fi
+
       # A `pull_request` run tested the merge of the pull request into main,
       # which is a different tree. Only a successful `push` run counts.
       - name: main CI succeeded for this commit
@@ -104,16 +116,23 @@ jobs:
         run: |
           git fetch --tags --force origin
 
-          # `latest` means the newest release. A patch release of an older
-          # minor version leaves `latest` where it is.
-          newest="$(git tag --list 'v*' | sort -V | tail -1)"
           # The Helm chart defaults `image.tag` to the chart's appVersion, which
           # is the crate version without the leading `v`. Publish both spellings.
           tags=("${GITHUB_REF_NAME}" "${GITHUB_REF_NAME#v}")
-          if [ "${newest}" = "${GITHUB_REF_NAME}" ]; then
-            tags+=(latest)
+
+          # `latest` means the newest stable release. `sort -V` ranks `v1.0.0`
+          # below `v1.0.0-rc.1`, so only stable tags take part, and a
+          # prerelease never moves `latest`. A patch release of an older minor
+          # version leaves `latest` where it is.
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            echo "::notice::${GITHUB_REF_NAME} is a prerelease; leaving :latest where it is"
           else
-            echo "::notice::${GITHUB_REF_NAME} is not the newest v* tag (${newest}); leaving :latest where it is"
+            newest="$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)"
+            if [ "${newest}" = "${GITHUB_REF_NAME}" ]; then
+              tags+=(latest)
+            else
+              echo "::notice::${GITHUB_REF_NAME} is not the newest stable tag (${newest}); leaving :latest where it is"
+            fi
           fi
 
           arguments=()
