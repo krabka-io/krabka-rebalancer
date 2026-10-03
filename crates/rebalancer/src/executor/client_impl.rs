@@ -170,36 +170,30 @@ fn build_alter_throttle_request(
     let rate_str = throttle.bytes_per_sec_i64().to_string();
     let mut resources: Vec<AlterConfigsResource> = Vec::new();
 
-    // Per-broker rate configs.
-    for broker in &targets.leader_brokers {
+    // Kafka requires one resource per broker, including brokers that are
+    // both a source leader and a destination follower in this proposal.
+    for broker in targets.leader_brokers.union(&targets.follower_brokers) {
+        let mut configs = Vec::new();
+        for (name, brokers) in [
+            (RATE_KEY_LEADER, &targets.leader_brokers),
+            (RATE_KEY_FOLLOWER, &targets.follower_brokers),
+        ] {
+            if brokers.contains(broker) {
+                configs.push(AlterableConfig {
+                    name: name.into(),
+                    config_operation: op_byte,
+                    value: match op {
+                        ConfigOp::Set => Some(rate_str.clone()),
+                        ConfigOp::Delete => None,
+                    },
+                    ..Default::default()
+                });
+            }
+        }
         resources.push(AlterConfigsResource {
             resource_type: RESOURCE_TYPE_BROKER,
             resource_name: broker.to_string(),
-            configs: vec![AlterableConfig {
-                name: RATE_KEY_LEADER.into(),
-                config_operation: op_byte,
-                value: match op {
-                    ConfigOp::Set => Some(rate_str.clone()),
-                    ConfigOp::Delete => None,
-                },
-                ..Default::default()
-            }],
-            ..Default::default()
-        });
-    }
-    for broker in &targets.follower_brokers {
-        resources.push(AlterConfigsResource {
-            resource_type: RESOURCE_TYPE_BROKER,
-            resource_name: broker.to_string(),
-            configs: vec![AlterableConfig {
-                name: RATE_KEY_FOLLOWER.into(),
-                config_operation: op_byte,
-                value: match op {
-                    ConfigOp::Set => Some(rate_str.clone()),
-                    ConfigOp::Delete => None,
-                },
-                ..Default::default()
-            }],
+            configs,
             ..Default::default()
         });
     }
@@ -554,6 +548,49 @@ mod tests {
                 unknown_tagged_fields: UnknownTaggedFields(vec![]),
             }
         );
+    }
+
+    #[test]
+    fn throttle_requests_group_shared_leader_and_follower_brokers() {
+        let mut shared = targets();
+        shared.leader_brokers.insert(2);
+        for op in [ConfigOp::Set, ConfigOp::Delete] {
+            let req = build_alter_throttle_request(op, &shared, bytes_per_sec(1234));
+            let identities: std::collections::BTreeSet<_> = req
+                .resources
+                .iter()
+                .map(|resource| (resource.resource_type, &resource.resource_name))
+                .collect();
+            assert2::assert!(identities.len() == req.resources.len());
+            let broker = req
+                .resources
+                .iter()
+                .find(|resource| {
+                    resource.resource_type == RESOURCE_TYPE_BROKER && resource.resource_name == "2"
+                })
+                .unwrap();
+            assert2::assert!(broker.configs.len() == 2);
+            assert2::assert!(
+                broker
+                    .configs
+                    .iter()
+                    .map(|config| config.name.as_str())
+                    .collect::<Vec<_>>()
+                    == [RATE_KEY_LEADER, RATE_KEY_FOLLOWER]
+            );
+            for config in &broker.configs {
+                match op {
+                    ConfigOp::Set => {
+                        assert2::assert!(config.config_operation == OP_SET);
+                        assert2::assert!(config.value.as_deref() == Some("1234"));
+                    }
+                    ConfigOp::Delete => {
+                        assert2::assert!(config.config_operation == OP_DELETE);
+                        assert2::assert!(config.value.is_none());
+                    }
+                }
+            }
+        }
     }
 
     #[test]

@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.4.2] — 2026-10-03
+
+### Fixed
+
+- Group leader and follower throttle settings under one broker resource when applying or clearing a rebalance. This prevents duplicate-resource rejection by Kafka and Krabka Broker 0.7.0.
+
 ## [0.3.8] — 2026-06-23
 
 
