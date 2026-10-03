@@ -11,7 +11,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crabka_units::{fmt::Human as _, prelude::*};
+use krabka_units::{fmt::Human as _, prelude::*};
 pub use parse::{MetricKind, ParsedSample};
 pub use targets::{ScrapeTarget, TargetParseError, TargetSource, parse_targets};
 use tokio_util::sync::CancellationToken;

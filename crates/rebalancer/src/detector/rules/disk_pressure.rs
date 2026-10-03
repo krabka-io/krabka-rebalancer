@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use crabka_units::{
+use krabka_units::{
     ByteSize, Ratio,
     fmt::Human as _,
     prelude::{ByteSizeExt as _, RatioExt as _},
@@ -81,7 +81,7 @@ impl Rule for DiskPressure {
 mod tests {
     use std::sync::Arc;
 
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
     use crate::{

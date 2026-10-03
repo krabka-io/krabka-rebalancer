@@ -7,7 +7,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crabka_units::ByteRate;
+use krabka_units::ByteRate;
 use serde::{Deserialize, Serialize};
 
 use crate::model::proposal::ProposalStatus;
@@ -44,7 +44,7 @@ pub struct InFlightFile {
     pub proposal_id: String,
     pub phase: Phase,
     pub started_at_ms: i64,
-    #[serde(with = "crabka_units::serde_units::numeric::bytes_per_sec_i64")]
+    #[serde(with = "krabka_units::serde_units::numeric::bytes_per_sec_i64")]
     pub throttle: ByteRate,
     /// Set on the transition into `ClearThrottle`, so a resume during the
     /// clear knows which terminal status to commit.
@@ -119,7 +119,7 @@ fn path_of(data_dir: &Path) -> PathBuf {
 
 #[cfg(test)]
 mod tests {
-    use crabka_units::{convert::ByteRateExt as _, mebibytes_per_sec};
+    use krabka_units::{convert::ByteRateExt as _, mebibytes_per_sec};
 
     use super::*;
 

@@ -11,7 +11,7 @@ pub mod load;
 
 use std::collections::HashMap;
 
-use crabka_units::{ByteRate, ByteSize};
+use krabka_units::{ByteRate, ByteSize};
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Default, Deserialize, PartialEq)]
@@ -26,16 +26,16 @@ pub struct BrokerCapacities {
 #[derive(Debug, Clone, Default, Deserialize, PartialEq)]
 pub struct BrokerCapacity {
     pub max_replicas: Option<u32>,
-    #[serde(default, with = "crabka_units::serde_units::numeric::option_bytes_u64")]
+    #[serde(default, with = "krabka_units::serde_units::numeric::option_bytes_u64")]
     pub disk_bytes: Option<ByteSize>,
     #[serde(
         default,
-        with = "crabka_units::serde_units::numeric::option_bytes_per_sec_i64"
+        with = "krabka_units::serde_units::numeric::option_bytes_per_sec_i64"
     )]
     pub network_in_bytes_per_sec: Option<ByteRate>,
     #[serde(
         default,
-        with = "crabka_units::serde_units::numeric::option_bytes_per_sec_i64"
+        with = "krabka_units::serde_units::numeric::option_bytes_per_sec_i64"
     )]
     pub network_out_bytes_per_sec: Option<ByteRate>,
     pub cpu_cores: Option<f64>,

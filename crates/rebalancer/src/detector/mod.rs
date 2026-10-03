@@ -16,7 +16,7 @@ use std::{collections::VecDeque, sync::Arc};
 
 pub use anomaly::{Anomaly, AnomalyKey, AnomalyKind, AnomalySeverity};
 pub use auto_trigger::{AutoTriggerError, goals_for_kind, maybe_trigger};
-use crabka_units::{Ratio, Time, convert::TimeExt as _, minutes, percent, secs};
+use krabka_units::{Ratio, Time, convert::TimeExt as _, minutes, percent, secs};
 pub use metrics::DetectorMetrics;
 pub use store::{AnomalyStore, StoreError};
 use tokio::sync::Mutex as AsyncMutex;
@@ -345,7 +345,7 @@ mod tests {
     use std::sync::Arc;
 
     use assert2::check;
-    use crabka_units::{bytes_per_sec, millis};
+    use krabka_units::{bytes_per_sec, millis};
     use tokio_util::sync::CancellationToken;
 
     use super::*;

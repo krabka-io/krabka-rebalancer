@@ -2,7 +2,7 @@
 //! model layer owns them, so the optimizer and the goals do not depend on
 //! generated code.
 
-use crabka_units::{ByteRate, convert::ByteRateExt};
+use krabka_units::{ByteRate, convert::ByteRateExt};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -78,14 +78,14 @@ pub struct Proposal {
     /// executor applied. Zero otherwise.
     #[serde(
         default = "zero_byte_rate",
-        with = "crabka_units::serde_units::numeric::bytes_per_sec_i64"
+        with = "krabka_units::serde_units::numeric::bytes_per_sec_i64"
     )]
     pub throttle: ByteRate,
 }
 
 #[cfg(test)]
 mod tests {
-    use crabka_units::mebibytes_per_sec;
+    use krabka_units::mebibytes_per_sec;
 
     use super::*;
 

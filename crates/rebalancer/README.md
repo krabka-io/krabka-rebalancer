@@ -27,7 +27,7 @@ use krabka_rebalancer::goals::{GoalContext, leader_distribution::LeaderDistribut
 use krabka_rebalancer::model::{BrokerView, ClusterState, PartitionView};
 use krabka_rebalancer::optimizer;
 use krabka_rebalancer::scraper::UsageStore;
-use crabka_units::percent;
+use krabka_units::percent;
 
 # fn run() -> Result<(), Box<dyn std::error::Error>> {
 let state = ClusterState {

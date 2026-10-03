@@ -1,11 +1,11 @@
 //! Single-key produce path for the state topic. It is built directly on
-//! `crabka_client_core::Client`, to match the rebalancer's
+//! `krabka_client_core::Client`, to match the rebalancer's
 //! `ingest::admin_client` pattern. A one-key-per-write workload does not need
 //! the high-level `krabka-client-producer`.
 
 use bytes::Bytes;
-use crabka_client_core::Client;
-use crabka_protocol::{
+use krabka_client_core::Client;
+use krabka_protocol::{
     owned::{
         produce_request::{PartitionProduceData, ProduceRequest, TopicProduceData},
         produce_response::ProduceResponse,
@@ -13,7 +13,7 @@ use crabka_protocol::{
     primitives::uuid::Uuid,
     records::{Record, RecordBatch},
 };
-use crabka_units::convert::TimeExt as _;
+use krabka_units::convert::TimeExt as _;
 use tracing::debug;
 
 use crate::{
@@ -95,7 +95,7 @@ async fn send_once(
     topic_id: Uuid,
     key: &Bytes,
     value: Option<Bytes>,
-    produce_timeout: crabka_units::Time,
+    produce_timeout: krabka_units::Time,
 ) -> Result<(), StateTopicError> {
     let req = produce_request(topic, topic_id, key, value, produce_timeout);
     let resp = client.broker(leader_id).send(req).await?;
@@ -110,7 +110,7 @@ fn produce_request(
     topic_id: Uuid,
     key: &Bytes,
     value: Option<Bytes>,
-    produce_timeout: crabka_units::Time,
+    produce_timeout: krabka_units::Time,
 ) -> ProduceRequest {
     let record = Record {
         key: Some(key.clone()),
@@ -175,13 +175,13 @@ mod tests {
     use std::sync::Arc;
 
     use assert2::check;
-    use crabka_protocol::{
+    use krabka_protocol::{
         owned::produce_response::{
             PartitionProduceResponse, ProduceResponse, TopicProduceResponse,
         },
         records::RecordsPayload,
     };
-    use crabka_units::{Time, millis, secs};
+    use krabka_units::{Time, millis, secs};
 
     use super::*;
     use crate::state_topic::test_broker::{Answer, Seen, TestBroker};
@@ -211,7 +211,7 @@ mod tests {
         Client::builder()
             .bootstrap("127.0.0.1:1")
             .client_id(unreachable_client_id(suffix))
-            .connect_timeout(CLIENT_TIMEOUT)
+            .socket_connection_setup_timeout(CLIENT_TIMEOUT)
             .request_timeout(CLIENT_TIMEOUT)
             .build()
             .await

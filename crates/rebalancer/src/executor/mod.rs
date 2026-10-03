@@ -11,7 +11,7 @@ pub mod throttle;
 
 use std::{fmt::Write as _, path::PathBuf, sync::Arc, time::Instant};
 
-use crabka_units::{ByteRate, Time, convert::TimeExt as _};
+use krabka_units::{ByteRate, Time, convert::TimeExt as _};
 use tokio::{sync::Mutex, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
@@ -387,7 +387,7 @@ mod tests {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
     use assert2::check;
-    use crabka_units::{millis, secs};
+    use krabka_units::{millis, secs};
 
     use super::*;
     use crate::{
@@ -410,7 +410,7 @@ mod tests {
     }
 
     /// The binary's default KIP-73 replication throttle.
-    const DEFAULT_THROTTLE: ByteRate = crabka_units::bytes_per_sec(50_000_000);
+    const DEFAULT_THROTTLE: ByteRate = krabka_units::bytes_per_sec(50_000_000);
 
     fn cfg(dir: &std::path::Path) -> ExecutorConfig {
         ExecutorConfig {

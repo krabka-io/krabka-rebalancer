@@ -3,8 +3,10 @@
 
 use std::collections::BTreeMap;
 
-use crabka_client_admin::{AdminClient, AdminError, CreateTopicOutcome, CreateTopicSpec};
-use crabka_units::{
+use krabka_client_admin::{
+    AdminClient, AdminError, CreateTopicOutcome, CreateTopicSpec, TopicMutationOptions,
+};
+use krabka_units::{
     Time,
     convert::{RatioExt as _, TimeExt as _},
 };
@@ -33,7 +35,7 @@ impl TopicAdminClient for AdminClient {
         specs: &[CreateTopicSpec],
         timeout: Time,
     ) -> Result<Vec<CreateTopicOutcome>, AdminError> {
-        AdminClient::create_topics(self, specs, timeout).await
+        AdminClient::create_topics(self, specs, TopicMutationOptions::with_timeout(timeout)).await
     }
 }
 
@@ -124,6 +126,7 @@ async fn try_create_topic<A: TopicAdminClient + ?Sized>(
         partitions: 1,
         replicas: i32::from(rf),
         configs: configs.clone(),
+        replica_assignments: BTreeMap::new(),
     };
     let outcomes = admin.create_topics(&[spec], timeout).await?;
     for o in outcomes {
@@ -146,8 +149,8 @@ mod tests {
     use std::collections::VecDeque;
 
     use assert2::check;
-    use crabka_client_admin::{AdminError, CreateTopicOutcome, KafkaError};
-    use crabka_units::secs;
+    use krabka_client_admin::{AdminError, CreateTopicOutcome, KafkaError};
+    use krabka_units::secs;
 
     use super::*;
 
@@ -173,6 +176,7 @@ mod tests {
         CreateTopicOutcome {
             name: name.into(),
             topic_id: None,
+            throttle_time: None,
             error: None,
         }
     }
@@ -181,6 +185,7 @@ mod tests {
         CreateTopicOutcome {
             name: name.into(),
             topic_id: None,
+            throttle_time: None,
             error: Some(KafkaError {
                 code,
                 name: "TEST_ERROR",
@@ -227,9 +232,9 @@ mod tests {
             ..Default::default()
         };
         let policy = RebalancerRuntimePolicy {
-            state_topic_create_timeout: crabka_units::millis(37),
-            state_topic_min_cleanable_dirty_ratio: crabka_units::percent(2),
-            state_topic_segment_interval: crabka_units::secs(90),
+            state_topic_create_timeout: krabka_units::millis(37),
+            state_topic_min_cleanable_dirty_ratio: krabka_units::percent(2),
+            state_topic_segment_interval: krabka_units::secs(90),
             ..Default::default()
         };
 
@@ -238,7 +243,7 @@ mod tests {
             .unwrap();
 
         let (specs, timeout) = &admin.calls[0];
-        assert2::assert!(*timeout == crabka_units::millis(37));
+        assert2::assert!(*timeout == krabka_units::millis(37));
         assert2::assert!(specs[0].configs["min.cleanable.dirty.ratio"] == "0.02");
         assert2::assert!(specs[0].configs["segment.ms"] == "90000");
     }

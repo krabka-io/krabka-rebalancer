@@ -1,12 +1,12 @@
-//! Production `ClientFacade` over `crabka_client_core::Client`. It maps each
+//! Production `ClientFacade` over `krabka_client_core::Client`. It maps each
 //! trait method to the matching admin RPC through raw `Client::send`, and
 //! mirrors the ingester pattern.
 
 use std::collections::BTreeMap;
 
 use async_trait::async_trait;
-use crabka_client_core::Client;
-use crabka_protocol::owned::{
+use krabka_client_core::Client;
+use krabka_protocol::owned::{
     alter_partition_reassignments_request::{
         AlterPartitionReassignmentsRequest, ReassignablePartition, ReassignableTopic,
     },
@@ -16,7 +16,7 @@ use crabka_protocol::owned::{
     list_partition_reassignments_request::ListPartitionReassignmentsRequest,
     list_partition_reassignments_response::ListPartitionReassignmentsResponse,
 };
-use crabka_units::{
+use krabka_units::{
     ByteRate, Time,
     convert::{ByteRateExt as _, TimeExt as _},
     secs,
@@ -97,7 +97,7 @@ impl Default for ReassignmentRequestTimeout {
 }
 
 fn check_alter_configs_response(
-    resp: &crabka_protocol::owned::incremental_alter_configs_response::IncrementalAlterConfigsResponse,
+    resp: &krabka_protocol::owned::incremental_alter_configs_response::IncrementalAlterConfigsResponse,
 ) -> Result<(), PhaseError> {
     let failures: Vec<String> = resp
         .responses
@@ -121,7 +121,7 @@ fn check_alter_configs_response(
 }
 
 fn check_reassign_response(
-    resp: &crabka_protocol::owned::alter_partition_reassignments_response::AlterPartitionReassignmentsResponse,
+    resp: &krabka_protocol::owned::alter_partition_reassignments_response::AlterPartitionReassignmentsResponse,
 ) -> Result<(), PhaseError> {
     if resp.error_code != 0 {
         let msg = resp.error_message.as_deref().unwrap_or("");
@@ -408,7 +408,7 @@ mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
     use assert2::check;
-    use crabka_protocol::{
+    use krabka_protocol::{
         UnknownTaggedFields,
         owned::{
             alter_partition_reassignments_response::{
@@ -423,7 +423,7 @@ mod tests {
             },
         },
     };
-    use crabka_units::{Time, bytes_per_sec, micros, millis};
+    use krabka_units::{Time, bytes_per_sec, micros, millis};
 
     use super::*;
 
@@ -725,7 +725,7 @@ mod tests {
         let inner = Client::builder()
             .bootstrap("127.0.0.1:1")
             .client_id(format!("rebalancer-live-client-test-{suffix}"))
-            .connect_timeout(CLIENT_TIMEOUT)
+            .socket_connection_setup_timeout(CLIENT_TIMEOUT)
             .request_timeout(CLIENT_TIMEOUT)
             .build()
             .await

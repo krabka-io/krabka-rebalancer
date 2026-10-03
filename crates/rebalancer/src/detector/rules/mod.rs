@@ -9,8 +9,8 @@ pub mod slow_broker;
 pub mod under_replicated;
 
 pub use broker_death::BrokerDeath;
-use crabka_units::{Time, convert::TimeExt as _};
 pub use disk_pressure::DiskPressure;
+use krabka_units::{Time, convert::TimeExt as _};
 pub use slow_broker::SlowBroker;
 pub use under_replicated::UnderReplicatedPartitions;
 

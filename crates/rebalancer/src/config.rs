@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use crabka_units::{
+use krabka_units::{
     ByteSize, Ratio, Time,
     convert::{ByteSizeExt as _, RatioExt as _, TimeExt as _},
     mebibytes, millis, minutes, percent, secs,

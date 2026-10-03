@@ -14,12 +14,12 @@ use std::{path::PathBuf, sync::Arc};
 
 use axum::{Extension, http::HeaderMap};
 use connectrpc_axum::message::{ConnectError, ConnectRequest, ConnectResponse, error::Code};
-use crabka_units::{
+use krabka_units::{
     ByteRate, Time,
     convert::{ByteRateExt as _, StdDurationExt as _, TimeExt as _},
 };
 #[cfg(test)]
-use crabka_units::{millis, secs};
+use krabka_units::{millis, secs};
 use subtle::ConstantTimeEq as _;
 use tokio_util::sync::CancellationToken;
 
@@ -654,7 +654,7 @@ mod tests {
 
     use assert2::check;
     use async_trait::async_trait;
-    use crabka_units::{bytes_per_sec, percent};
+    use krabka_units::{bytes_per_sec, percent};
 
     use super::*;
     use crate::{

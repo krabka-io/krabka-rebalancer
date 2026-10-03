@@ -7,7 +7,7 @@
 //! therefore `Clone`, and the ingester tick and the RPC handlers can share one
 //! bundle without further wrapping.
 
-use crabka_units::{Time, convert::TimeExt as _};
+use krabka_units::{Time, convert::TimeExt as _};
 use prometheus_client::{
     encoding::EncodeLabelSet,
     metrics::{counter::Counter, family::Family, gauge::Gauge, histogram::Histogram},
@@ -174,7 +174,7 @@ impl RebalancerMetrics {
 
 #[cfg(test)]
 mod tests {
-    use crabka_units::millis;
+    use krabka_units::millis;
 
     use super::*;
     use crate::health::new_registry;

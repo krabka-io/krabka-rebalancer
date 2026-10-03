@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use crabka_units::Ratio;
+use krabka_units::Ratio;
 
 use crate::{
     goals::{Goal, GoalContext, GoalPriority},
@@ -93,7 +93,7 @@ impl Goal for LeaderDistribution {
 mod tests {
 
     use assert2::check;
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
     use crate::model::BrokerView;

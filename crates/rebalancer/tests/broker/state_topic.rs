@@ -5,15 +5,15 @@
 
 use std::sync::Arc;
 
-use crabka_client_admin::AdminClient;
-use crabka_client_core::Client;
-use crabka_units::{Time, bytes_per_sec, convert::StdDurationExt as _, secs};
 use krabka_broker::{Broker, BrokerConfig};
+use krabka_client_admin::AdminClient;
+use krabka_client_core::Client;
 use krabka_rebalancer::{
     config::RebalancerRuntimePolicy,
     executor::state::{InFlightFile, Phase},
     state_topic::{LoadedState, StateBackend, StateTopic, StateTopicLoader, topic_admin},
 };
+use krabka_units::{Time, bytes_per_sec, convert::StdDurationExt as _, secs};
 use tokio_util::sync::CancellationToken;
 
 /// Boot a single-broker in-process Krabka and return its bootstrap address.

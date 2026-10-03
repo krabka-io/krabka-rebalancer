@@ -3,7 +3,7 @@
 //! config gate, the in-flight-execution gate, and the in-flight-reassignment
 //! gate all guard it.
 
-use crabka_units::convert::{StdDurationExt as _, TimeExt as _};
+use krabka_units::convert::{StdDurationExt as _, TimeExt as _};
 use tracing::{debug, info, warn};
 
 use super::DetectorConfig;
@@ -157,7 +157,7 @@ pub async fn maybe_trigger(
 mod tests {
     use std::sync::Arc;
 
-    use crabka_units::{bytes_per_sec, millis, minutes, percent, secs};
+    use krabka_units::{bytes_per_sec, millis, minutes, percent, secs};
     use tempfile::tempdir;
     use tokio_util::sync::CancellationToken;
 
