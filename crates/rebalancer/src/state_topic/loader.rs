@@ -5,8 +5,8 @@
 
 use std::sync::Arc;
 
-use crabka_client_core::Client;
-use crabka_protocol::{
+use krabka_client_core::Client;
+use krabka_protocol::{
     owned::{
         fetch_request::{FetchPartition, FetchRequest, FetchTopic},
         fetch_response::FetchResponse,
@@ -14,7 +14,7 @@ use crabka_protocol::{
     primitives::uuid::Uuid,
     records::RecordsPayload,
 };
-use crabka_units::{
+use krabka_units::{
     ByteSize, Time,
     convert::{ByteSizeExt as _, TimeExt as _},
 };
@@ -235,7 +235,7 @@ fn fetched_records_from_response(
 #[cfg(test)]
 mod tests {
     use bytes::Bytes;
-    use crabka_protocol::{
+    use krabka_protocol::{
         UnknownTaggedFields,
         owned::{
             fetch_request::ReplicaState,
@@ -244,7 +244,7 @@ mod tests {
         primitives::uuid::Uuid,
         records::{Record, RecordBatch, RecordsPayload},
     };
-    use crabka_units::millis;
+    use krabka_units::millis;
 
     use super::*;
     use crate::{
@@ -261,7 +261,7 @@ mod tests {
             id.to_string(),
             Phase::Wait,
             42,
-            crabka_units::bytes_per_sec(50_000_000),
+            krabka_units::bytes_per_sec(50_000_000),
         )
     }
 
@@ -330,7 +330,7 @@ mod tests {
             "__krabka_state",
             Uuid([7; 16]),
             0,
-            crabka_units::kibibytes(32),
+            krabka_units::kibibytes(32),
         );
         assert2::assert!(request.max_bytes == 32 * 1024);
         assert2::assert!(request.topics[0].partitions[0].partition_max_bytes == 32 * 1024);

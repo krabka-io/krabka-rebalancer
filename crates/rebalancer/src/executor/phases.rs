@@ -1,18 +1,18 @@
 //! Per-phase action functions. The `ClientFacade` trait decouples them from
-//! `crabka_client_core::Client`, so the state-machine tests can drive the
+//! `krabka_client_core::Client`, so the state-machine tests can drive the
 //! executor against a `MockClient`.
 
 use std::collections::BTreeSet;
 
 use async_trait::async_trait;
-use crabka_units::{ByteRate, convert::ByteRateExt};
+use krabka_units::{ByteRate, convert::ByteRateExt};
 
 use crate::{executor::throttle::ThrottleTargets, model::Movement};
 
 /// A typed wrapper over the small set of admin RPCs the executor needs.
 ///
-/// The production impl forwards to `crabka_client_core::Client::send` with the
-/// generated `crabka_protocol::owned::*` request types. Tests substitute a
+/// The production impl forwards to `krabka_client_core::Client::send` with the
+/// generated `krabka_protocol::owned::*` request types. Tests substitute a
 /// `MockClient`.
 #[async_trait]
 pub trait ClientFacade: Send + Sync {
@@ -119,7 +119,7 @@ pub mod tests {
         atomic::{AtomicUsize, Ordering},
     };
 
-    use crabka_units::mebibytes_per_sec;
+    use krabka_units::mebibytes_per_sec;
 
     use super::*;
 

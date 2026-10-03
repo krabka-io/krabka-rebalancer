@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 
-use crabka_units::convert::TimeExt as _;
+use krabka_units::convert::TimeExt as _;
 
 use super::{Rule, RuleCtx, RuleHit, sustained_memo};
 use crate::detector::{AnomalyKey, AnomalyKind, AnomalySeverity};
@@ -55,7 +55,7 @@ impl Rule for BrokerDeath {
 #[cfg(test)]
 mod tests {
 
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
     use crate::{

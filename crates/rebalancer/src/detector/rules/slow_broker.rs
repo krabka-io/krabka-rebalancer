@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use crabka_units::convert::RatioExt as _;
+use krabka_units::convert::RatioExt as _;
 
 use super::{Rule, RuleCtx, RuleHit};
 use crate::{
@@ -82,7 +82,7 @@ impl Rule for SlowBroker {
 mod tests {
     use std::sync::Arc;
 
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
     use crate::{

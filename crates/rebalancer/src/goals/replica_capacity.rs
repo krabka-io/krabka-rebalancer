@@ -187,7 +187,7 @@ impl Goal for ReplicaCapacity {
 mod tests {
     use std::sync::Arc;
 
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
     use crate::{

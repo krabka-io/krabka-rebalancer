@@ -105,7 +105,7 @@ impl Goal for MinTopicLeadersPerBroker {
 #[cfg(test)]
 mod tests {
 
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
     use crate::model::BrokerView;

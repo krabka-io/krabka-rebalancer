@@ -7,8 +7,8 @@ pub mod admin_client;
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
-use crabka_client_core::Client;
-use crabka_units::{Time, convert::TimeExt as _};
+use krabka_client_core::Client;
+use krabka_units::{Time, convert::TimeExt as _};
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, info, warn};
 

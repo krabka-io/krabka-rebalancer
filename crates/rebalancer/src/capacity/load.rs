@@ -60,7 +60,7 @@ pub fn load_from_path(path: &Path) -> Result<BrokerCapacities, CapacityError> {
 mod tests {
     use std::io::Write;
 
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
     use crate::capacity::BrokerCapacity;

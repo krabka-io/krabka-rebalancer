@@ -19,7 +19,7 @@ use std::sync::{
 
 use arc_swap::ArcSwap;
 use bytes::Bytes;
-use crabka_client_core::Client;
+use krabka_client_core::Client;
 pub use error::StateTopicError;
 pub use loader::StateTopicLoader;
 
@@ -218,7 +218,7 @@ pub mod fake {
 
 #[cfg(test)]
 mod tests {
-    use crabka_units::bytes_per_sec;
+    use krabka_units::bytes_per_sec;
 
     use super::*;
     use crate::{

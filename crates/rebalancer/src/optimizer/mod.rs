@@ -3,7 +3,7 @@
 
 use std::collections::{BTreeSet, HashMap};
 
-use crabka_units::{ByteRate, convert::ByteRateExt as _};
+use krabka_units::{ByteRate, convert::ByteRateExt as _};
 use uuid::Uuid;
 
 use crate::{
@@ -518,7 +518,7 @@ mod tests {
     use std::sync::Arc;
 
     use assert2::check;
-    use crabka_units::{percent, prelude::*};
+    use krabka_units::{percent, prelude::*};
 
     use super::*;
     use crate::{

@@ -7,7 +7,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crabka_units::Ratio;
+use krabka_units::Ratio;
 
 use crate::{
     goals::{Goal, GoalContext, GoalPriority, OriginalReplicaState},
@@ -97,7 +97,7 @@ impl Goal for TopicReplicaDistribution {
 #[cfg(test)]
 mod tests {
 
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
     use crate::model::BrokerView;

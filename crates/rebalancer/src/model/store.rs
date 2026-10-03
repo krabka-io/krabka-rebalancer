@@ -167,7 +167,7 @@ fn write_atomic(path: &Path, on_disk: &OnDisk) -> Result<(), StoreError> {
 #[cfg(test)]
 mod tests {
 
-    use crabka_units::{ByteRate, convert::ByteRateExt as _};
+    use krabka_units::{ByteRate, convert::ByteRateExt as _};
 
     use super::*;
     use crate::model::proposal::{Proposal, ProposalStatus, ProposalSummary};

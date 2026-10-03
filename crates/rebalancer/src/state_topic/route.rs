@@ -2,8 +2,8 @@
 //! id-keyed Fetch and Produce versions name it by, and the broker that leads
 //! partition 0. The loader and the producer both resolve it through Metadata.
 
-use crabka_client_core::Client;
-use crabka_protocol::{owned::metadata_response::MetadataResponse, primitives::uuid::Uuid};
+use krabka_client_core::Client;
+use krabka_protocol::{owned::metadata_response::MetadataResponse, primitives::uuid::Uuid};
 
 use crate::state_topic::error::StateTopicError;
 
@@ -49,10 +49,10 @@ fn topic_route_from_metadata(resp: &MetadataResponse, topic: &str) -> Option<Top
 
 #[cfg(test)]
 mod tests {
-    use crabka_protocol::owned::metadata_response::{
+    use krabka_protocol::owned::metadata_response::{
         MetadataResponse, MetadataResponsePartition, MetadataResponseTopic,
     };
-    use crabka_units::{Time, millis};
+    use krabka_units::{Time, millis};
 
     use super::*;
 

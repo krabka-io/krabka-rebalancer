@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 
-use crabka_units::convert::RatioExt;
+use krabka_units::convert::RatioExt;
 
 use crate::{
     goals::{Goal, GoalContext, GoalPriority, OriginalReplicaState},
@@ -141,7 +141,7 @@ impl Goal for CpuCapacity {
 mod tests {
     use std::sync::Arc;
 
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
     use crate::{

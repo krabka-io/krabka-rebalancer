@@ -4,17 +4,17 @@
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 
 use clap::Parser;
-use crabka_client_core::{
+use krabka_client_core::{
     ClientFrameMax, ConnectionDispatchQueueCapacity, ConnectionOptions,
     DEFAULT_CONNECTION_DISPATCH_QUEUE_CAPACITY,
 };
-use crabka_units::{
+use krabka_units::{
     ByteRate, ByteSize, Ratio, Time,
     convert::{ByteRateExt as _, StdDurationExt as _, TimeExt as _},
     fraction, parse, percent,
 };
 #[cfg(test)]
-use crabka_units::{millis, secs};
+use krabka_units::{millis, secs};
 use krabka_rebalancer::{
     api::{GoalRegistry, handlers::AppState},
     config::{PositiveUsize, RebalancerRuntimePolicy},
@@ -93,8 +93,8 @@ fn prepare_data_dir(args: &Args) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn connect_client(args: &Args) -> anyhow::Result<crabka_client_core::Client> {
-    Ok(crabka_client_core::Client::builder()
+async fn connect_client(args: &Args) -> anyhow::Result<krabka_client_core::Client> {
+    Ok(krabka_client_core::Client::builder()
         .bootstrap(args.bootstrap_servers.clone())
         .client_id("krabka-rebalancer")
         .dispatch_queue_capacity(args.client_dispatch_queue_capacity)
@@ -355,44 +355,44 @@ struct Args {
         long,
         env = "KRABKA_REBALANCER_REASSIGNMENT_REQUEST_TIMEOUT",
         default_value = "60s",
-        value_parser = crabka_units::parse::positive_time
+        value_parser = krabka_units::parse::positive_time
     )]
     reassignment_request_timeout: Time,
 }
 
 #[derive(Debug, clap::Args, Default)]
 struct RebalancerRuntimeOptions {
-    #[arg(long, env = "KRABKA_REBALANCER_RECOVERY_LOAD_POLL_INTERVAL", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_RECOVERY_LOAD_POLL_INTERVAL", value_parser = krabka_units::parse::positive_time)]
     recovery_load_poll_interval: Option<Time>,
-    #[arg(long, env = "KRABKA_REBALANCER_EXECUTOR_DRAIN_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_EXECUTOR_DRAIN_TIMEOUT", value_parser = krabka_units::parse::positive_time)]
     executor_drain_timeout: Option<Time>,
-    #[arg(long, env = "KRABKA_REBALANCER_INGESTER_JOIN_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_INGESTER_JOIN_TIMEOUT", value_parser = krabka_units::parse::positive_time)]
     ingester_join_timeout: Option<Time>,
-    #[arg(long, env = "KRABKA_REBALANCER_SCRAPER_HTTP_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_SCRAPER_HTTP_TIMEOUT", value_parser = krabka_units::parse::positive_time)]
     scraper_http_timeout: Option<Time>,
-    #[arg(long, env = "KRABKA_REBALANCER_CANCEL_DRAIN_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_CANCEL_DRAIN_TIMEOUT", value_parser = krabka_units::parse::positive_time)]
     cancel_drain_timeout: Option<Time>,
-    #[arg(long, env = "KRABKA_REBALANCER_CANCEL_DRAIN_POLL_INTERVAL", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_CANCEL_DRAIN_POLL_INTERVAL", value_parser = krabka_units::parse::positive_time)]
     cancel_drain_poll_interval: Option<Time>,
     #[arg(long, env = "KRABKA_REBALANCER_DETECTOR_HISTORY_CAPACITY")]
     detector_history_capacity: Option<PositiveUsize>,
-    #[arg(long, env = "KRABKA_REBALANCER_STATE_TOPIC_CREATE_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_TOPIC_CREATE_TIMEOUT", value_parser = krabka_units::parse::positive_time)]
     state_topic_create_timeout: Option<Time>,
-    #[arg(long, env = "KRABKA_REBALANCER_STATE_LOADER_POLL_INTERVAL", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_LOADER_POLL_INTERVAL", value_parser = krabka_units::parse::positive_time)]
     state_loader_poll_interval: Option<Time>,
     #[arg(long, env = "KRABKA_REBALANCER_STATE_LOADER_QUIET_POLLS")]
     state_loader_quiet_polls: Option<PositiveUsize>,
-    #[arg(long, env = "KRABKA_REBALANCER_STATE_FETCH_MAX", value_parser = crabka_units::parse::positive_byte_size)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_FETCH_MAX", value_parser = krabka_units::parse::positive_byte_size)]
     state_fetch_max: Option<ByteSize>,
     #[arg(long, env = "KRABKA_REBALANCER_STATE_PRODUCE_RETRY_ATTEMPTS")]
     state_produce_retry_attempts: Option<PositiveUsize>,
-    #[arg(long, env = "KRABKA_REBALANCER_STATE_PRODUCE_RETRY_BACKOFF", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_PRODUCE_RETRY_BACKOFF", value_parser = krabka_units::parse::positive_time)]
     state_produce_retry_backoff: Option<Time>,
-    #[arg(long, env = "KRABKA_REBALANCER_STATE_PRODUCE_TIMEOUT", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_PRODUCE_TIMEOUT", value_parser = krabka_units::parse::positive_time)]
     state_produce_timeout: Option<Time>,
-    #[arg(long, env = "KRABKA_REBALANCER_STATE_TOPIC_MIN_CLEANABLE_DIRTY_RATIO", value_parser = crabka_units::parse::positive_ratio)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_TOPIC_MIN_CLEANABLE_DIRTY_RATIO", value_parser = krabka_units::parse::positive_ratio)]
     state_topic_min_cleanable_dirty_ratio: Option<Ratio>,
-    #[arg(long, env = "KRABKA_REBALANCER_STATE_TOPIC_SEGMENT_INTERVAL", value_parser = crabka_units::parse::positive_time)]
+    #[arg(long, env = "KRABKA_REBALANCER_STATE_TOPIC_SEGMENT_INTERVAL", value_parser = krabka_units::parse::positive_time)]
     state_topic_segment_interval: Option<Time>,
 }
 
@@ -468,7 +468,7 @@ fn parse_client_frame_max(value: &str) -> Result<ByteSize, String> {
 
 async fn start_state_topic(
     args: &Args,
-    client: &crabka_client_core::Client,
+    client: &krabka_client_core::Client,
     shutdown: &CancellationToken,
     runtime_policy: RebalancerRuntimePolicy,
 ) -> anyhow::Result<StateTopicSetup> {
@@ -477,7 +477,7 @@ async fn start_state_topic(
         .split(',')
         .map(|address| address.trim().to_string())
         .collect();
-    let mut admin = crabka_client_admin::AdminClient::connect_with_options(
+    let mut admin = krabka_client_admin::AdminClient::connect_with_options(
         &addrs,
         ConnectionOptions {
             client_id: "krabka-rebalancer".to_owned(),
@@ -902,7 +902,7 @@ async fn main() -> anyhow::Result<()> {
 mod tests {
     use std::sync::{Mutex as StdMutex, OnceLock};
 
-    use crabka_units::convert::RatioExt as _;
+    use krabka_units::convert::RatioExt as _;
 
     use super::*;
 
@@ -914,7 +914,7 @@ mod tests {
             Args::try_parse_from(["krabka-rebalancer", "--bootstrap-servers", "127.0.0.1:9092"])
                 .unwrap();
         assert2::assert!(defaults.client_dispatch_queue_capacity == 64);
-        assert2::assert!(defaults.client_frame_max == crabka_units::mebibytes(100));
+        assert2::assert!(defaults.client_frame_max == krabka_units::mebibytes(100));
 
         let custom = Args::try_parse_from([
             "krabka-rebalancer",
@@ -927,7 +927,7 @@ mod tests {
         ])
         .unwrap();
         assert2::assert!(custom.client_dispatch_queue_capacity == 7);
-        assert2::assert!(custom.client_frame_max == crabka_units::kibibytes(32));
+        assert2::assert!(custom.client_frame_max == krabka_units::kibibytes(32));
 
         for (option, invalid) in [
             ("--client-dispatch-queue-capacity", "0"),
@@ -964,7 +964,7 @@ mod tests {
         .unwrap();
         let policy = args.runtime.effective_policy().unwrap();
         assert2::assert!(policy.recovery_load_poll_interval == millis(37));
-        assert2::assert!(policy.state_fetch_max == crabka_units::mebibytes(2));
+        assert2::assert!(policy.state_fetch_max == krabka_units::mebibytes(2));
         assert2::assert!(policy.state_produce_retry_attempts.get() == 7);
         assert2::assert!(policy.state_topic_min_cleanable_dirty_ratio == percent(2));
 
@@ -1051,7 +1051,7 @@ mod tests {
             Args::try_parse_from(["krabka-rebalancer", "--bootstrap-servers", "127.0.0.1:9092"])
                 .unwrap();
         assert2::assert!(from_env.client_dispatch_queue_capacity == 7);
-        assert2::assert!(from_env.client_frame_max == crabka_units::kibibytes(32));
+        assert2::assert!(from_env.client_frame_max == krabka_units::kibibytes(32));
 
         let from_cli = Args::try_parse_from([
             "krabka-rebalancer",
@@ -1064,7 +1064,7 @@ mod tests {
         ])
         .unwrap();
         assert2::assert!(from_cli.client_dispatch_queue_capacity == 9);
-        assert2::assert!(from_cli.client_frame_max == crabka_units::kibibytes(64));
+        assert2::assert!(from_cli.client_frame_max == krabka_units::kibibytes(64));
     }
 
     #[test]
@@ -1142,7 +1142,7 @@ mod tests {
             (
                 "default throttle",
                 50_000_000,
-                crabka_units::bytes_per_sec(50_000_000),
+                krabka_units::bytes_per_sec(50_000_000),
             ),
         ] {
             assert2::assert!(arg_bytes_per_sec(value) == expected);

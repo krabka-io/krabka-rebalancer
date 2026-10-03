@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use crabka_units::convert::ByteRateExt;
+use krabka_units::convert::ByteRateExt;
 
 use crate::{
     goals::{Goal, GoalContext, GoalPriority, OriginalReplicaState},
@@ -129,7 +129,7 @@ impl Goal for NetworkOutCapacity {
 mod tests {
     use std::sync::Arc;
 
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
     use crate::{

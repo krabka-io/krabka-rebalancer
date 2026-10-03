@@ -1,6 +1,6 @@
 //! In-process single-broker fixture for state-topic tests.
 //!
-//! It wraps `crabka_client_core::MockBroker` with the framing a typed test
+//! It wraps `krabka_client_core::MockBroker` with the framing a typed test
 //! needs. It answers `ApiVersions` with the ranges a current Kafka broker
 //! advertises for Metadata, Fetch and Produce. It answers Metadata with the
 //! state topic's current id and this broker as the partition-0 leader. It
@@ -13,8 +13,8 @@ use std::sync::{
 };
 
 use bytes::BytesMut;
-use crabka_client_core::{Client, MockBroker};
-use crabka_protocol::{
+use krabka_client_core::{Client, MockBroker};
+use krabka_protocol::{
     Decode, Encode, ProtocolRequest,
     owned::{
         api_versions_request,
@@ -31,7 +31,7 @@ use crabka_protocol::{
     },
     primitives::uuid::Uuid,
 };
-use crabka_units::{Time, secs};
+use krabka_units::{Time, secs};
 
 /// The broker's node id, which Metadata also names as the partition-0 leader.
 pub(crate) const NODE_ID: i32 = 1;
@@ -80,7 +80,7 @@ impl TestBroker {
                 match api_key {
                     api_versions_request::API_KEY => Some(api_versions()),
                     metadata_request::API_KEY => Some(response_frame::<
-                        crabka_protocol::owned::metadata_request::MetadataRequest,
+                        krabka_protocol::owned::metadata_request::MetadataRequest,
                     >(
                         &metadata(
                             &topic,

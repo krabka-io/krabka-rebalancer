@@ -3,7 +3,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use crabka_units::{Ratio, fraction};
+use krabka_units::{Ratio, fraction};
 use num_traits::ToPrimitive;
 
 use crate::{
@@ -241,7 +241,7 @@ pub trait Goal: Send + Sync {
 
 #[cfg(test)]
 pub mod tests {
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
 

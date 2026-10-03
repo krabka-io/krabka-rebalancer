@@ -1,9 +1,9 @@
-//! Thin typed wrappers over `crabka_client_core::Client` for the three RPCs
+//! Thin typed wrappers over `krabka_client_core::Client` for the three RPCs
 //! the ingester needs each tick. The typed responses keep the `Ingester` free
-//! of `crabka_protocol` imports.
+//! of `krabka_protocol` imports.
 
-use crabka_client_core::{Client, ClientError};
-use crabka_protocol::owned::{
+use krabka_client_core::{Client, ClientError};
+use krabka_protocol::owned::{
     describe_cluster_request::DescribeClusterRequest,
     describe_cluster_response::DescribeClusterResponse,
     list_partition_reassignments_request::ListPartitionReassignmentsRequest,
@@ -56,7 +56,7 @@ fn list_reassignments_request() -> ListPartitionReassignmentsRequest {
 #[cfg(test)]
 mod tests {
     use assert2::check;
-    use crabka_units::{Time, millis};
+    use krabka_units::{Time, millis};
 
     use super::*;
 

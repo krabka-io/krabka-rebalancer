@@ -5,9 +5,9 @@
 
 use std::sync::Arc;
 
-use crabka_client_admin::AdminClient;
-use crabka_client_core::Client;
-use crabka_units::{Time, bytes_per_sec, convert::StdDurationExt as _, secs};
+use krabka_client_admin::AdminClient;
+use krabka_client_core::Client;
+use krabka_units::{Time, bytes_per_sec, convert::StdDurationExt as _, secs};
 use krabka_broker::{Broker, BrokerConfig};
 use krabka_rebalancer::{
     config::RebalancerRuntimePolicy,

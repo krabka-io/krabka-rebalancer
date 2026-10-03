@@ -11,10 +11,10 @@ pub(crate) fn is_transient_topic_partition_code(code: i16) -> bool {
 #[derive(Debug, Error)]
 pub enum StateTopicError {
     #[error("client error: {0}")]
-    Client(#[from] crabka_client_core::ClientError),
+    Client(#[from] krabka_client_core::ClientError),
 
     #[error("admin error: {0}")]
-    Admin(#[from] crabka_client_admin::AdminError),
+    Admin(#[from] krabka_client_admin::AdminError),
 
     #[error("produce returned error code {code}")]
     ProduceErrorCode { code: i16 },

@@ -7,7 +7,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crabka_units::{Ratio, convert::ByteRateExt};
+use krabka_units::{Ratio, convert::ByteRateExt};
 
 use crate::{
     goals::{Goal, GoalContext, GoalPriority, OriginalReplicaState},
@@ -111,7 +111,7 @@ mod tests {
     use std::sync::Arc;
 
     use assert2::check;
-    use crabka_units::prelude::*;
+    use krabka_units::prelude::*;
 
     use super::*;
     use crate::{

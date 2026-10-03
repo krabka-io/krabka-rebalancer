@@ -18,7 +18,7 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<InFlightFile, StateTopicError> {
 
 #[cfg(test)]
 mod tests {
-    use crabka_units::mebibytes_per_sec;
+    use krabka_units::mebibytes_per_sec;
 
     use super::*;
     use crate::executor::state::Phase;
