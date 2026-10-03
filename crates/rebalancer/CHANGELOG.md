@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] — 2026-10-03
+
+### Fixed
+
+- Send broker-specific replication throttle settings to each named broker, with topic settings grouped separately. Attempt remaining resources when clearing throttles after a broker rejects its request.
+
 ## [0.4.2] — 2026-10-03
 
 ### Fixed
