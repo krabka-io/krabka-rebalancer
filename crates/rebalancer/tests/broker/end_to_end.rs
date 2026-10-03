@@ -13,14 +13,9 @@ use assert2::check;
 use async_trait::async_trait;
 use axum::{Extension, http::HeaderMap};
 use connectrpc_axum::message::{ConnectError, ConnectRequest, ConnectResponse, error::Code};
+use krabka_broker::{Broker, BrokerConfig, BrokerHandle};
 use krabka_client_core::Client;
 use krabka_protocol::owned::create_topics_request::{CreatableTopic, CreateTopicsRequest};
-use krabka_units::{
-    ByteRate, Time, bytes_per_sec,
-    convert::{ByteRateExt as _, TimeExt as _},
-    millis, minutes, percent, secs,
-};
-use krabka_broker::{Broker, BrokerConfig, BrokerHandle};
 use krabka_rebalancer::{
     api::{
         GoalRegistry,
@@ -41,6 +36,11 @@ use krabka_rebalancer::{
     pb,
     scraper::UsageStore,
     state_topic::StateBackend as _,
+};
+use krabka_units::{
+    ByteRate, Time, bytes_per_sec,
+    convert::{ByteRateExt as _, TimeExt as _},
+    millis, minutes, percent, secs,
 };
 use prometheus_client::registry::Registry;
 use tempfile::TempDir;
