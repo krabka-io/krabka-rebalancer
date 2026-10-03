@@ -350,14 +350,52 @@ impl ClientFacade for LiveClient {
         targets: &ThrottleTargets,
         throttle: ByteRate,
     ) -> Result<(), PhaseError> {
-        let req = build_alter_throttle_request(op, targets, throttle);
-        let resp = self
-            .inner
-            .send(req)
-            .await
-            .map_err(|e| PhaseError::Client(e.to_string()))?;
-        check_alter_configs_response(&resp)?;
-        Ok(())
+        let mut req = build_alter_throttle_request(op, targets, throttle);
+        if targets
+            .leader_brokers
+            .union(&targets.follower_brokers)
+            .any(|broker| !self.inner.knows_broker(*broker))
+        {
+            self.inner
+                .refresh_metadata()
+                .await
+                .map_err(|error| PhaseError::Client(error.to_string()))?;
+        }
+
+        let mut result = Ok(());
+        for resource in std::mem::take(&mut req.resources) {
+            if resource.resource_type != RESOURCE_TYPE_BROKER {
+                req.resources.push(resource);
+                continue;
+            }
+            let broker = resource
+                .resource_name
+                .parse::<i32>()
+                .expect("broker resource names are generated from i32 ids");
+            let response = self
+                .inner
+                .broker(broker)
+                .send(IncrementalAlterConfigsRequest {
+                    resources: vec![resource],
+                    ..Default::default()
+                })
+                .await
+                .map_err(|error| PhaseError::Client(error.to_string()))
+                .and_then(|response| check_alter_configs_response(&response));
+            // Attempt every resource so cleanup can clear other brokers even
+            // if one broker rejects its request. Preserve the first failure.
+            result = result.and(response);
+        }
+        if !req.resources.is_empty() {
+            let response = self
+                .inner
+                .send(req)
+                .await
+                .map_err(|error| PhaseError::Client(error.to_string()))
+                .and_then(|response| check_alter_configs_response(&response));
+            result = result.and(response);
+        }
+        result
     }
 
     async fn submit_reassignments(&self, movements: &[Movement]) -> Result<(), PhaseError> {
@@ -756,6 +794,208 @@ mod tests {
             filter_in_flight_response(&resp, &[("orders".into(), 2), ("payments".into(), 9)]);
 
         assert2::assert!(filtered == vec![("orders".to_string(), 2)]);
+    }
+
+    struct ThrottleCluster {
+        client: LiveClient,
+        brokers: Vec<krabka_client_core::MockBroker>,
+        seen: std::sync::Arc<std::sync::Mutex<Vec<(i32, IncrementalAlterConfigsRequest)>>>,
+    }
+
+    impl ThrottleCluster {
+        async fn start(reject_broker: Option<i32>) -> Self {
+            use std::sync::{Arc, Mutex};
+
+            use bytes::BytesMut;
+            use krabka_protocol::{
+                Decode as _, Encode as _,
+                owned::{
+                    api_versions_request,
+                    api_versions_response::{ApiVersion, ApiVersionsResponse},
+                    incremental_alter_configs_request, metadata_request,
+                    metadata_response::{MetadataResponse, MetadataResponseBroker},
+                },
+            };
+
+            let addresses = Arc::new(Mutex::new(Vec::<MetadataResponseBroker>::new()));
+            let seen = Arc::new(Mutex::new(Vec::new()));
+            let mut brokers = Vec::new();
+            for node_id in 0..3 {
+                let response_addresses = Arc::clone(&addresses);
+                let recorded = Arc::clone(&seen);
+                let broker = krabka_client_core::MockBroker::start(move |key, version, _, body| {
+                    let mut response = BytesMut::new();
+                    match key {
+                        api_versions_request::API_KEY => {
+                            ApiVersionsResponse {
+                                api_keys: [
+                                    api_versions_request::API_KEY,
+                                    metadata_request::API_KEY,
+                                    incremental_alter_configs_request::API_KEY,
+                                ]
+                                .into_iter()
+                                .map(|api_key| ApiVersion {
+                                    api_key,
+                                    min_version: 0,
+                                    max_version: 0,
+                                    ..Default::default()
+                                })
+                                .collect(),
+                                ..Default::default()
+                            }
+                            .encode(&mut response, 0)
+                            .unwrap();
+                        }
+                        metadata_request::API_KEY => {
+                            MetadataResponse {
+                                brokers: response_addresses.lock().unwrap().clone(),
+                                ..Default::default()
+                            }
+                            .encode(&mut response, version)
+                            .unwrap();
+                        }
+                        incremental_alter_configs_request::API_KEY => {
+                            let client_id_len = usize::from(u16::from_be_bytes([body[0], body[1]]));
+                            let req = IncrementalAlterConfigsRequest::decode(
+                                &mut &body[2 + client_id_len..],
+                                version,
+                            )
+                            .unwrap();
+                            let responses = req
+                                .resources
+                                .iter()
+                                .map(|resource| {
+                                    let wrong_broker = resource.resource_type
+                                        == RESOURCE_TYPE_BROKER
+                                        && resource.resource_name != node_id.to_string();
+                                    let rejected = wrong_broker
+                                        || (reject_broker == Some(node_id)
+                                            && resource.resource_type == RESOURCE_TYPE_BROKER);
+                                    AlterConfigsResourceResponse {
+                                        resource_type: resource.resource_type,
+                                        resource_name: resource.resource_name.clone(),
+                                        error_code: if rejected { 42 } else { 0 },
+                                        error_message: rejected
+                                            .then(|| "wrong or rejected broker".into()),
+                                        ..Default::default()
+                                    }
+                                })
+                                .collect();
+                            recorded.lock().unwrap().push((node_id, req));
+                            IncrementalAlterConfigsResponse {
+                                responses,
+                                ..Default::default()
+                            }
+                            .encode(&mut response, version)
+                            .unwrap();
+                        }
+                        _ => return None,
+                    }
+                    Some(response.to_vec())
+                })
+                .await;
+                // Register every endpoint before the client asks for Metadata.
+                addresses.lock().unwrap().push(MetadataResponseBroker {
+                    node_id,
+                    host: "127.0.0.1".into(),
+                    port: i32::from(broker.addr.port()),
+                    ..Default::default()
+                });
+                brokers.push(broker);
+            }
+            let inner = Client::builder()
+                .bootstrap(brokers[0].addr.to_string())
+                .request_timeout(krabka_units::secs(5))
+                .build()
+                .await
+                .unwrap();
+            Self {
+                client: LiveClient::new(inner),
+                brokers,
+                seen,
+            }
+        }
+
+        fn stop(self) {
+            self.client.inner.close();
+            for broker in self.brokers {
+                broker.stop();
+            }
+        }
+    }
+
+    fn cluster_throttle_targets() -> ThrottleTargets {
+        let mut targets = targets();
+        targets.leader_brokers.insert(0);
+        targets.follower_brokers.insert(1);
+        targets
+    }
+
+    #[tokio::test]
+    async fn throttle_configs_route_to_each_broker_and_group_topics() {
+        let cluster = ThrottleCluster::start(None).await;
+        for op in [ConfigOp::Set, ConfigOp::Delete] {
+            cluster
+                .client
+                .alter_throttle_configs(op, &cluster_throttle_targets(), bytes_per_sec(1234))
+                .await
+                .expect("broker-specific configs reach their own broker");
+            let seen = std::mem::take(&mut *cluster.seen.lock().unwrap());
+            assert2::assert!(seen.len() == 4);
+            for (node_id, request) in seen {
+                assert2::assert!(request.resources.len() == 1);
+                let resource = &request.resources[0];
+                if resource.resource_type == RESOURCE_TYPE_BROKER {
+                    assert2::assert!(resource.resource_name == node_id.to_string());
+                    if node_id == 1 {
+                        assert2::assert!(resource.configs.len() == 2);
+                    }
+                } else {
+                    assert2::assert!(resource.resource_name == "orders");
+                    assert2::assert!(resource.configs.len() == 2);
+                }
+                for config in &resource.configs {
+                    match op {
+                        ConfigOp::Set => {
+                            assert2::assert!(config.config_operation == OP_SET);
+                            assert2::assert!(config.value.is_some());
+                        }
+                        ConfigOp::Delete => {
+                            assert2::assert!(config.config_operation == OP_DELETE);
+                            assert2::assert!(config.value.is_none());
+                        }
+                    }
+                }
+            }
+        }
+        cluster.stop();
+    }
+
+    #[tokio::test]
+    async fn throttle_cleanup_attempts_other_resources_after_broker_rejection() {
+        let cluster = ThrottleCluster::start(Some(1)).await;
+        let error = cluster
+            .client
+            .alter_throttle_configs(
+                ConfigOp::Delete,
+                &cluster_throttle_targets(),
+                bytes_per_sec(1234),
+            )
+            .await
+            .unwrap_err();
+        assert2::assert!(matches!(error, PhaseError::Broker(_)));
+        let seen = cluster.seen.lock().unwrap().clone();
+        assert2::assert!(seen.len() == 4);
+        assert2::assert!(
+            seen.iter().any(
+                |(node_id, request)| *node_id == 2 && request.resources[0].resource_name == "2"
+            )
+        );
+        assert2::assert!(
+            seen.iter()
+                .any(|(_, request)| request.resources[0].resource_type == RESOURCE_TYPE_TOPIC)
+        );
+        cluster.stop();
     }
 
     async fn unreachable_live_client(suffix: &str) -> LiveClient {
