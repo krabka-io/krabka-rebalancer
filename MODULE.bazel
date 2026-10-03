@@ -101,3 +101,22 @@ crate.annotation(
     repositories = ["mutants"],
 )
 use_repo(crate, "crates", "mutants")
+
+# Source members of first-party workspaces whose member list uses a glob.
+[
+    crate.annotation(
+        crate = name,
+        strip_prefix = directory,
+        workspace_cargo_toml = "Cargo.toml",
+    )
+    for name, directory in {
+        "krabka-client-admin": "crates/client-admin",
+        "krabka-client-core": "crates/client-core",
+        "krabka-compression": "crates/compression",
+        "krabka-ids": "crates/ids",
+        "krabka-metadata": "crates/metadata",
+        "krabka-security": "crates/security",
+        "krabka-units": "crates/units",
+        "krabka-voters": "crates/voters",
+    }.items()
+]

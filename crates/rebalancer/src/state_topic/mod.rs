@@ -19,8 +19,8 @@ use std::sync::{
 
 use arc_swap::ArcSwap;
 use bytes::Bytes;
-use krabka_client_core::Client;
 pub use error::StateTopicError;
+use krabka_client_core::Client;
 pub use loader::StateTopicLoader;
 
 use crate::{config::RebalancerRuntimePolicy, executor::state::InFlightFile};

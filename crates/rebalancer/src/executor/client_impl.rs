@@ -725,7 +725,7 @@ mod tests {
         let inner = Client::builder()
             .bootstrap("127.0.0.1:1")
             .client_id(format!("rebalancer-live-client-test-{suffix}"))
-            .connect_timeout(CLIENT_TIMEOUT)
+            .socket_connection_setup_timeout(CLIENT_TIMEOUT)
             .request_timeout(CLIENT_TIMEOUT)
             .build()
             .await

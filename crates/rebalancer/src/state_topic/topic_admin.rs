@@ -3,7 +3,9 @@
 
 use std::collections::BTreeMap;
 
-use krabka_client_admin::{AdminClient, AdminError, CreateTopicOutcome, CreateTopicSpec};
+use krabka_client_admin::{
+    AdminClient, AdminError, CreateTopicOutcome, CreateTopicSpec, TopicMutationOptions,
+};
 use krabka_units::{
     Time,
     convert::{RatioExt as _, TimeExt as _},
@@ -33,7 +35,7 @@ impl TopicAdminClient for AdminClient {
         specs: &[CreateTopicSpec],
         timeout: Time,
     ) -> Result<Vec<CreateTopicOutcome>, AdminError> {
-        AdminClient::create_topics(self, specs, timeout).await
+        AdminClient::create_topics(self, specs, TopicMutationOptions::with_timeout(timeout)).await
     }
 }
 
@@ -124,6 +126,7 @@ async fn try_create_topic<A: TopicAdminClient + ?Sized>(
         partitions: 1,
         replicas: i32::from(rf),
         configs: configs.clone(),
+        replica_assignments: BTreeMap::new(),
     };
     let outcomes = admin.create_topics(&[spec], timeout).await?;
     for o in outcomes {
@@ -173,6 +176,7 @@ mod tests {
         CreateTopicOutcome {
             name: name.into(),
             topic_id: None,
+            throttle_time: None,
             error: None,
         }
     }
@@ -181,6 +185,7 @@ mod tests {
         CreateTopicOutcome {
             name: name.into(),
             topic_id: None,
+            throttle_time: None,
             error: Some(KafkaError {
                 code,
                 name: "TEST_ERROR",

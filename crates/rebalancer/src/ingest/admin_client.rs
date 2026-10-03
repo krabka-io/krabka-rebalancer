@@ -84,7 +84,7 @@ mod tests {
         let client = Client::builder()
             .bootstrap("127.0.0.1:1")
             .client_id("rebalancer-admin-client-test")
-            .connect_timeout(CLIENT_TIMEOUT)
+            .socket_connection_setup_timeout(CLIENT_TIMEOUT)
             .request_timeout(CLIENT_TIMEOUT)
             .build()
             .await
