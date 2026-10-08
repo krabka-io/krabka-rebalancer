@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Move to krabka-protocol 0.6.0 and krabka-client 0.6.0. Kerberos support now comes from `krabka-sspi` on crates.io instead of a Git fork of `sspi`.
+
 ## [0.4.3] — 2026-10-03
 
 ### Fixed

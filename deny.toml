@@ -11,7 +11,7 @@ db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "deny"
 ignore = [
     # RSA "Marvin" timing side-channel. Pulled in transitively by `picky`
-    # (a hard dependency of the vendored `sspi` Kerberos stack). Our GSSAPI
+    # (a hard dependency of the `krabka-sspi` Kerberos stack). Our GSSAPI
     # path is auth-only over AES keytab keys and performs no RSA private-key
     # operations (no PKINIT), so the network-observable timing leak does not
     # apply. The advisory has no fixed release available.
@@ -40,7 +40,7 @@ allow = [
 ]
 exceptions = [
     # portpicker is public-domain-equivalent (The Unlicense, OSI-approved and
-    # FSF Free/Libre). Pulled in transitively via the vendored `sspi` crate's
+    # FSF Free/Libre). Pulled in transitively via the `krabka-sspi` crate's
     # `network_client` feature, which we need for KDC communication.
     { allow = ["Unlicense"], crate = "portpicker" },
     # Creusot's specification attributes/proc macros are LGPL-2.1-or-later.
@@ -76,7 +76,6 @@ allow-git = [
     "https://github.com/krabka-io/krabka-rebalancer",
     "https://github.com/krabka-io/krabka-schema-registry",
     "https://github.com/krabka-io/krabka-streams-rs",
-    "https://github.com/robot-head/sspi-rs",
     "https://github.com/testcontainers/testcontainers-rs-modules-community",
 ]
 
