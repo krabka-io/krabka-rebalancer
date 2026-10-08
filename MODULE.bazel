@@ -160,7 +160,6 @@ use_repo(crate, "crates", "mutants")
         "krabka-log": "crates/log",
         "krabka-log-iobench": "crates/log-iobench",
         "krabka-logfmt": "crates/logfmt",
-        "krabka-macros": "crates/macros",
         "krabka-logql": "crates/logql",
         "krabka-metrics": "crates/metrics",
         "krabka-metrics-service": "crates/metrics-service",
