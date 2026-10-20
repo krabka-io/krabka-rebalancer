@@ -4,12 +4,13 @@
 # The test asserts these properties of the built artifacts:
 #
 #   * the layer puts exactly `krabka-rebalancer` under /usr/bin,
-#   * the binary runs and answers `--help`,
+#   * the binary runs, answers `--help`, and reports the Cargo workspace version,
 #   * the image manifest references the layer,
 #   * the binary is an ELF for the architecture that the manifest declares.
 #
 # Argument 1 is the manifest architecture (IMAGE_ARCH in //packaging:BUILD.bazel).
 # Argument 2 is the image manifest JSON. Argument 3 is the layer tarball.
+# Argument 4 is the root Cargo.toml.
 set -euo pipefail
 
 expected="krabka-rebalancer"
@@ -17,6 +18,7 @@ expected="krabka-rebalancer"
 arch="$1"
 manifest="$2"
 layer="$3"
+cargo_manifest="$4"
 
 fail() {
     echo "image_binaries_test: $*" >&2
@@ -76,4 +78,10 @@ status=0
 "${path}" --help >/dev/null 2>&1 || status=$?
 [[ "${status}" -eq 0 ]] || fail "${expected} --help exited ${status}"
 
-echo "image_binaries_test: /usr/bin/${expected} is an ${arch} ELF and answers --help"
+version="$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' "${cargo_manifest}")"
+[[ -n "${version}" ]] || fail "workspace version is missing from ${cargo_manifest}"
+actual_version="$("${path}" --version)" || fail "${expected} --version failed"
+[[ "${actual_version}" == "${expected} ${version}" ]] ||
+    fail "${expected} reports [${actual_version}], expected [${expected} ${version}]"
+
+echo "image_binaries_test: /usr/bin/${expected} is an ${arch} ELF at version ${version} and answers --help"
