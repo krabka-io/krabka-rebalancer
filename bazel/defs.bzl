@@ -39,6 +39,7 @@ def crate_library(name, deps = [], **kwargs):
         crate_name = crate_name(),
         edition = edition(),
         rustc_flags = RUSTC_FLAGS,
+        version = native.module_version(),
         visibility = ["//visibility:public"],
         deps = all_crate_deps(normal = True) + deps,
         **kwargs
@@ -55,6 +56,7 @@ def crate_binary(name, crate_root, lib):
         crate_root = crate_root,
         edition = edition(),
         rustc_flags = RUSTC_FLAGS,
+        version = native.module_version(),
         visibility = ["//visibility:public"],
         deps = all_crate_deps(normal = True) + [lib],
     )

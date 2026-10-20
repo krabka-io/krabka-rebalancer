@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5] — 2026-10-20
+
+### Fixed
+
+- Stamp Bazel-built libraries and release binaries with the workspace version.
+  The image test now checks `--version` against Cargo.toml; the stopped 0.4.4
+  promotion reported 0.0.0.
+
 ## [0.4.4] — 2026-10-20
 
 ### Security

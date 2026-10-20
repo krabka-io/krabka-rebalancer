@@ -97,10 +97,12 @@ sh_test(
         IMAGE_ARCH,
         "$(rootpath :image_manifest_blob)",
         "$(rootpath :rebalancer_layer)",
+        "$(rootpath //:Cargo.toml)",
     ],
     data = [
         ":image_manifest_blob",
         ":rebalancer_layer",
+        "//:Cargo.toml",
     ],
 )
 
