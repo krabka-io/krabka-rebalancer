@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4] — 2026-10-20
+
+### Security
+
+- Update Rustls certificate verification to the fixed patch releases.
+- Parse broker-capacity YAML with safe Rust through serde-saphyr.
+
 ### Changed
 
 - Move to krabka-protocol 0.6.0 and krabka-client 0.6.0. Kerberos support now comes from `krabka-sspi` on crates.io instead of a Git fork of `sspi`.
