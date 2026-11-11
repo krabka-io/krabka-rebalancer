@@ -2,7 +2,7 @@ apiVersion: v2
 name: krabka-rebalancer
 description: Cruise-Control-equivalent partition rebalancer for Krabka clusters.
 type: application
-version: 0.2.0
+version: 0.2.1
 # appVersion tracks the crate release, and it is the default image tag. The
 # aggregated chart repository overrides both version and appVersion from the
 # workspace Cargo.toml when it packages the chart. A checkout installed straight
