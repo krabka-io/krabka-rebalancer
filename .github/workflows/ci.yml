@@ -2,6 +2,7 @@ name: ci
 
 on:
   pull_request:
+  merge_group:
   push:
     branches: [main]
   workflow_dispatch:
@@ -33,7 +34,7 @@ jobs:
           api-key: ${{ secrets.BUILDBUDDY_API_KEY }}
           client-cert: ${{ secrets.BUILDBUDDY_CLIENT_CERT }}
           client-key: ${{ secrets.BUILDBUDDY_CLIENT_KEY }}
-          upload: ${{ github.event_name != 'pull_request' }}
+          upload: ${{ github.event_name != 'pull_request' && github.event_name != 'merge_group' }}
       - run: bazel run //tools/format:format.check
       - run: bazel build //...
       - run: bazel test //...
@@ -156,14 +157,14 @@ jobs:
           overwrite: true
           retention-days: 90
 
+
   gate:
     name: gate
     if: always()
     needs: [bazel, cargo, supply-chain, helm, image]
     runs-on: ubuntu-26.04
+    timeout-minutes: 5
     steps:
-      - name: Keep temporary files off the size-limited /tmp tmpfs
-        run: echo "TMPDIR=${RUNNER_TEMP}" >> "${GITHUB_ENV}"
-      - env:
-          RESULTS: ${{ toJSON(needs) }}
-        run: test "$(jq '[.[] | select(.result != "success")] | length' <<<"${RESULTS}")" -eq 0
+      - uses: krabka-io/tooling/actions/gate@a42cceef18200f4f282ae5a090856f63125a12ff
+        with:
+          results: ${{ toJSON(needs) }}
