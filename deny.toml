@@ -20,6 +20,14 @@ ignore = [
     # pprof_util on the optional jemalloc profiling path; neither upstream has
     # removed it yet and no fixed paste release exists.
     "RUSTSEC-2024-0436",
+    # pin-utils is unmaintained. This is an unmaintained notice, not a
+    # vulnerability. It enters only through `async-dnssd` 0.5.1, which `sspi`
+    # uses for Apple DNS discovery on macOS and iOS, and only with
+    # `krabka-security`'s `gssapi` feature, which `[graph]` above turns on. No
+    # release of `async-dnssd` drops it yet. krabka-broker vendors a patched
+    # `async-dnssd`, which does not reach this workspace. Drop this once
+    # `async-dnssd` or `sspi` moves off pin-utils.
+    "RUSTSEC-2026-0441",
 ]
 
 [licenses]
